@@ -45,7 +45,21 @@ def update_match_accepted(connection, match_id, accepted=1):
 
 def update_marble_count(connection, player_id, marbles):
     cur = connection.cursor()
-    cur.execute("UPDATE users set marbles = ? WHERE id = ?", [marbles, player_id])
+    cur.execute("UPDATE users SET marbles = ? WHERE id = ?", [marbles, player_id])
+
+    connection.commit()
+
+
+def update_player_wins(connection, player_id, wins):
+    cur = connection.cursor()
+    cur.execute("UPDATE users SET wins = ? WHERE id = ?", [wins, player_id])
+
+    connection.commit()
+
+
+def update_player_loses(connection, player_id, loses):
+    cur = connection.cursor()
+    cur.execute("UPDATE users SET loses = ? WHERE id = ?", [loses, player_id])
 
     connection.commit()
 
@@ -78,6 +92,15 @@ def get_player_info(connection, player_id):
         return sqlquery
     else:
         return 0
+
+
+def get_player_wins(connection, player_id):
+    sqlquery = get_player_info(connection, player_id)
+    return sqlquery[4]
+
+
+def get_player_loses(connection, player_id):
+    return get_player_info(connection, player_id)[5]
 
 
 def get_marble_count(connection, player_id):
@@ -113,6 +136,18 @@ def delete_match(connection, match_id):
 def add_marbles(connection, player_id, marbles):
     old_marbles = get_marble_count(connection, player_id)
     update_marble_count(connection, player_id, old_marbles + marbles)
+
+
+def add_player_win(connection, player_id, wins):
+    player_wins = get_player_wins(connection, player_id)
+    update_player_wins(connection, player_id, player_wins+wins)
+    return
+
+
+def add_player_loses(connection, player_id, loses):
+    player_loses = get_player_loses(connection, player_id)
+    update_player_loses(connection, player_id, player_loses+loses)
+    return
 
 
 def subtract_marbles(connection, player_id, marbles):

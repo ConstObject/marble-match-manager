@@ -43,6 +43,8 @@ async def init(ctx):
 
 # endregion
 
+# region Match Controls
+
 
 @bot.command(name='match', help='Challenge a user to a marble match, for all the marbles')
 async def match(ctx, member: discord.Member, marbles: int):
@@ -107,7 +109,7 @@ async def match_start(ctx):
     await ctx.send(f'Match {match_id} started, betting is closed and all bets are locked in.')
 
 
-@bot.command(name='win', help='Selects the winner of a marble match, and transfers marbles')
+@bot.command(name='winner', help='Selects the winner of a marble match, and transfers marbles')
 async def match_win(ctx, member: discord.Member):
     winner_id = database_operation.get_player_id(db_connection, str(member), ctx.guild.id)[0]
     match_id = database_operation.find_match_by_player_id(db_connection, winner_id)
@@ -124,6 +126,9 @@ async def match_win(ctx, member: discord.Member):
         loser_id = match_info[3]
 
     database_operation.transfer_marbles(db_connection, loser_id, winner_id, match_info[1])
+
+    database_operation.add_player_win(db_connection, winner_id, 1)
+    database_operation.add_player_loses(db_connection, loser_id, 1)
 
     database_operation.delete_match(db_connection, match_id)
 
@@ -159,6 +164,39 @@ async def close_current_match(ctx):
     database_operation.delete_match(db_connection, match_id)
     await ctx.send(f'Closed match {match_id}.')
 
+# endregion
+
+
+@bot.command(name='wins', help='Prints a players wins')
+async def wins(ctx, member: discord.Member):
+    player_id = database_operation.get_player_id(db_connection, str(member), ctx.guild.id)[0]
+    player_wins = database_operation.get_player_wins(db_connection, player_id)
+    player_loses = database_operation.get_player_loses(db_connection, player_id)
+
+    if player_wins == 0:
+        player_winrate = 0
+    else:
+        player_winrate = 100 * (player_wins/(player_wins+player_loses))
+
+    await ctx.send(f'Wins: {player_wins}.'
+                   f'\nLoses: {player_loses}.'
+                   f'\nWinrate: {player_winrate}%')
+
+
+@bot.command(name='loses', help='Prints a players wins')
+async def wins(ctx, member: discord.Member):
+    player_id = database_operation.get_player_id(db_connection, str(member), ctx.guild.id)[0]
+    player_wins = database_operation.get_player_wins(db_connection, player_id)
+    player_loses = database_operation.get_player_loses(db_connection, player_id)
+
+    if player_wins == 0:
+        player_winrate = 0
+    else:
+        player_winrate = 100 * (player_wins / (player_wins + player_loses))
+
+    await ctx.send(f'Loses: {player_loses}.'
+                   f'\nWins: {player_wins}.'
+                   f'\nWinrate: {player_winrate}%')
 
 # region Marble Management Commands
 
