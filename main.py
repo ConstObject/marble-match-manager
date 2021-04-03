@@ -20,6 +20,19 @@ bot = commands.Bot(command_prefix='$', intents=intents)
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord.')
+    await bot.change_presence(activity=discord.Game(name='$help'))
+
+
+@bot.event
+async def on_member_join(member):
+    if database_operation.get_player_id(db_connection, str(member), member.guild.id) is None:
+        database_operation.create_user(db_connection, None, str(member), 10, member.guild.id)
+        print(f'Added {member.name} to database')
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    await ctx.send(error)
 
 # region Initialization of database
 
@@ -49,6 +62,10 @@ async def init(ctx):
 @bot.command(name='match', help='Challenge a user to a marble match, for all the marbles')
 async def match(ctx, member: discord.Member, marbles: int):
     if ctx.author == member:
+        await ctx.send('You\'re a terrible person who made Soph have to program this.')
+        return
+
+    if marbles > 0:
         await ctx.send('You\'re a terrible person who made Soph have to program this.')
         return
 
@@ -166,6 +183,8 @@ async def close_current_match(ctx):
 
 # endregion
 
+# region Wins/loses
+
 
 @bot.command(name='wins', help='Prints a players wins')
 async def wins(ctx, member: discord.Member):
@@ -198,12 +217,19 @@ async def wins(ctx, member: discord.Member):
                    f'\nWins: {player_wins}.'
                    f'\nWinrate: {player_winrate}%')
 
+# endregion
+
 # region Marble Management Commands
 
 
 @bot.command(name='set_marbles', help='Will set the users marble count to a new number')
 @commands.has_role('Admin')
 async def set_marbles(ctx, member: discord.Member, marbles: int):
+
+    if marbles < 0:
+        await ctx.send('You\'re a terrible person who made Soph have to program this.')
+        return
+
     database_operation.update_marble_count(db_connection,
                                            database_operation.get_player_id(db_connection, str(member),
                                                                             ctx.guild.id)[0],
@@ -214,6 +240,11 @@ async def set_marbles(ctx, member: discord.Member, marbles: int):
 @bot.command(name='add_marbles', help='Will add to the users marble bank')
 @commands.has_role('Admin')
 async def add_marbles(ctx, member: discord.Member, marbles: int):
+
+    if marbles < 0:
+        await ctx.send('You\'re a terrible person who made Soph have to program this.')
+        return
+
     player_id = database_operation.get_player_id(db_connection, str(member), ctx.guild.id)[0]
     old_marbles = database_operation.get_marble_count(db_connection, player_id)
 
@@ -240,8 +271,12 @@ async def balance2(ctx, member: discord.Member):
 
 
 @bot.command(name='transfer', help='Transfers marbles from your bank to theirs')
-async def transfer(ctx, member:discord.Member, marbles: int):
+async def transfer(ctx, member: discord.Member, marbles: int):
     if ctx.author == member:
+        await ctx.send('You\'re a terrible person who made Soph have to program this.')
+        return
+
+    if marbles < 0:
         await ctx.send('You\'re a terrible person who made Soph have to program this.')
         return
 
