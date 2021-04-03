@@ -30,9 +30,9 @@ async def on_member_join(member):
         print(f'Added {member.name} to database')
 
 
-@bot.event
-async def on_command_error(ctx, error):
-    await ctx.send(error)
+# @bot.event
+# async def on_command_error(ctx, error):
+#     await ctx.send(error)
 
 # region Initialization of database
 
@@ -62,11 +62,11 @@ async def init(ctx):
 @bot.command(name='match', help='Challenge a user to a marble match, for all the marbles')
 async def match(ctx, member: discord.Member, marbles: int):
     if ctx.author == member:
-        await ctx.send('You\'re a terrible person who made Soph have to program this.')
+        await ctx.send('You\'re a terrible person who made Soph have to program this.\n No self matches')
         return
 
-    if marbles > 0:
-        await ctx.send('You\'re a terrible person who made Soph have to program this.')
+    if marbles < 1:
+        await ctx.send('You\'re a terrible person who made Soph have to program this.\n No negatives or zero')
         return
 
     challenger = database_operation.get_player_id(db_connection, str(ctx.author), ctx.guild.id)
@@ -147,6 +147,8 @@ async def match_win(ctx, member: discord.Member):
     database_operation.add_player_win(db_connection, winner_id, 1)
     database_operation.add_player_loses(db_connection, loser_id, 1)
 
+    database_operation.process_bets(db_connection, match_id, winner_id)
+
     database_operation.delete_match(db_connection, match_id)
 
     await ctx.send(f'{member.display_name} is the winner, gaining a total of {match_info[1]} marbles!')
@@ -183,6 +185,56 @@ async def close_current_match(ctx):
 
 # endregion
 
+# region Bet Controls
+
+
+@bot.command(name='bet', help='Place a bet on a match')
+async def bet(ctx, winner: discord.Member, match_id: int, marbles: int):
+
+    if marbles < 0:
+        await ctx.send('You\'re a terrible person who made Soph have to program this.')
+        return
+
+    player_id = database_operation.get_player_id(db_connection, str(winner), ctx.guild.id)[0]
+    better_id = database_operation.get_player_id(db_connection, str(ctx.author), ctx.guild.id)[0]
+
+    match_info = database_operation.get_match_info_by_id(db_connection, match_id)
+
+    if match_info == 0:
+        await ctx.send('Invalid match id')
+        return
+
+    if match_info[2] == 1:
+        await ctx.send('Match has started and betting is closed')
+        return
+
+    if match_info[5] != 1:
+        await ctx.send('You can only bet on matches that both players have accepted')
+        return
+
+    if match_info[3] == better_id or match_info[4] == better_id:
+        await ctx.send('You cannot bet on matches you are in')
+
+    if match_info[3] != player_id:
+        if match_info[4] != player_id:
+            await ctx.send('Player is not in this match')
+            return
+
+    bet_id = database_operation.find_bet(db_connection, match_id, better_id)
+
+    if bet_id != 0:
+        bet_info = database_operation.get_bet_info(db_connection, bet_id)
+        database_operation.add_marbles(db_connection, better_id, bet_info[1])
+        database_operation.update_bet(db_connection, bet_id, player_id, marbles)
+        await ctx.send('Bet updated')
+        return
+
+    database_operation.create_bet(db_connection, None, marbles, match_id, better_id, player_id)
+
+    await ctx.send('Bet submitted')
+
+# endregion
+
 # region Wins/loses
 
 
@@ -216,6 +268,47 @@ async def wins(ctx, member: discord.Member):
     await ctx.send(f'Loses: {player_loses}.'
                    f'\nWins: {player_wins}.'
                    f'\nWinrate: {player_winrate}%')
+
+# endregion
+
+# region Leaderboard
+
+
+@bot.command(name='leaderboard', help='Will list top 10 players by winrate, or give position of member on leaderboard')
+async def leaderboard(ctx, *, members: discord.Member = None):
+
+    player_info = database_operation.get_player_info_all_by_server(db_connection, ctx.guild.id)
+
+    players = []
+
+    for user in ctx.guild.members:
+        if database_operation.get_player_id(db_connection, str(user), ctx.guild.id) != 0:
+            player_data = database_operation.get_player_id(db_connection, str(user), ctx.guild.id)
+            if player_data[4] == 0:
+                winrate = 0
+            elif player_data[5] == 0:
+                winrate = 100
+            else:
+                winrate = 100*(player_data[4]/(player_data[4]+player_data[5]))
+
+            players.append((player_data[1], player_data[4], player_data[5], winrate))
+
+    players.sort(key=lambda players: players[3], reverse=True)
+
+    if members is not None:
+        for player in players:
+            if player[0] == str(members):
+                await ctx.send(f'{members.display_name} is rank #{players.index(player)+1}, '
+                               f'with a win-rate of {player[3]}%')
+        return
+
+    text = "```Leaderboard top 10 win-rate\n\n"
+
+    for player in players[0:10]:
+        text += (f'#{players.index(player)+1}. {player[0]}: %.0f' % player[3]) + '%\n'
+    text += "```"
+
+    await ctx.send(text)
 
 # endregion
 

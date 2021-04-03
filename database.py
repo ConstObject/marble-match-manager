@@ -22,8 +22,9 @@ def create_tables(connection):
                     "participant2 INTEGER NOT NULL, accepted INTEGER NOT NULL, FOREIGN KEY(participant1) "
                     "REFERENCES users(id), FOREIGN KEY(participant2) REFERENCES users(id))")
         cur.execute("CREATE TABLE IF NOT EXISTS bets(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
-                    "amount INTEGER NOT NULL, match_id INTEGER NOT NULL, participant1 INTEGER NOT NULL, "
-                    "FOREIGN KEY(match_id) REFERENCES matches(id), FOREIGN KEY(participant1) REFERENCES users(id))")
+                    "amount INTEGER NOT NULL, match_id INTEGER NOT NULL, better_id INTEGER NOT NULL, "
+                    "participant1 INTEGER NOT NULL, FOREIGN KEY(match_id) REFERENCES matches(id), "
+                    "FOREIGN KEY(better_id) REFERENCES users(id) FOREIGN KEY(participant1) REFERENCES users(id))")
         connection.commit()
     except Error as e:
         print(e)

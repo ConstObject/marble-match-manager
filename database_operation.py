@@ -21,11 +21,12 @@ def create_match(connection, match_id, amount, active, participant1, participant
     return cur.lastrowid
 
 
-def create_bet(connection, bet_id, amount, match_id, participant1):
+def create_bet(connection, bet_id, amount, match_id, better_id, participant1):
     cur = connection.cursor()
-    cur.execute("INSERT INTO bets VALUES (?, ?, ?, ?)", [bet_id, amount, match_id, participant1])
+    cur.execute("INSERT INTO bets VALUES (?, ?, ?, ?, ?)", [bet_id, amount, match_id, better_id, participant1])
 
     connection.commit()
+    subtract_marbles(connection, better_id, amount)
     return cur.lastrowid
 
 
@@ -60,6 +61,13 @@ def update_player_wins(connection, player_id, wins):
 def update_player_loses(connection, player_id, loses):
     cur = connection.cursor()
     cur.execute("UPDATE users SET loses = ? WHERE id = ?", [loses, player_id])
+
+    connection.commit()
+
+
+def update_bet(connection, bet_id, player_id, amount):
+    cur = connection.cursor()
+    cur.execute("UPDATE bets SET amount=?, participant1=? WHERE id=?", [amount, player_id, bet_id])
 
     connection.commit()
 
@@ -103,6 +111,18 @@ def get_player_loses(connection, player_id):
     return get_player_info(connection, player_id)[5]
 
 
+def get_player_info_all_by_server(connection, server_id):
+    cur = connection.cursor()
+    cur.execute("SELECT * FROM users WHERE server_id=?", [server_id])
+
+    sqlquery = cur.fetchall()
+
+    if sqlquery is not None:
+        return sqlquery
+    else:
+        return 0
+
+
 def get_marble_count(connection, player_id):
     cur = connection.cursor()
     cur.execute("SELECT * FROM users WHERE id=?", [player_id])
@@ -111,6 +131,30 @@ def get_marble_count(connection, player_id):
 
     if sqlquery is not None:
         return sqlquery[2]
+    else:
+        return 0
+
+
+def get_bet_info(connection, bet_id):
+    cur = connection.cursor()
+    cur.execute("SELECT * FROM bets WHERE id=?", [bet_id])
+
+    sqlquery = cur.fetchone()
+
+    if sqlquery is not None:
+        return sqlquery
+    else:
+        return 0
+
+
+def get_bet_info_all(connection, match_id):
+    cur = connection.cursor()
+    cur.execute("SELECT * FROM bets WHERE match_id=?", [match_id])
+
+    sqlquery = cur.fetchall()
+
+    if sqlquery is not None:
+        return sqlquery
     else:
         return 0
 
@@ -126,9 +170,28 @@ def find_match_by_player_id(connection, player_id):
         return 0
 
 
+def find_bet(connection, match_id, better_id):
+    cur = connection.cursor()
+    cur.execute("SELECT * FROM bets WHERE match_id=? AND better_id=?", [match_id, better_id])
+
+    sqlquery = cur.fetchone()
+
+    if sqlquery is not None:
+        return sqlquery[0]
+    else:
+        return 0
+
+
 def delete_match(connection, match_id):
     cur = connection.cursor()
     cur.execute("DELETE FROM matches WHERE id=?", [match_id])
+
+    connection.commit()
+
+
+def delete_bet(connection, bet_id):
+    cur = connection.cursor()
+    cur.execute("DELETE FROM bets WHERE id=?", [bet_id])
 
     connection.commit()
 
@@ -163,3 +226,56 @@ def transfer_marbles(connection, player_id1, player_id2, marbles):
 
     subtract_marbles(connection, player_id1, marbles)
     add_marbles(connection, player_id2, marbles)
+
+
+def is_bet_win(connection, bet_id, winner_id):
+    bet_info = get_bet_info(connection, bet_id)
+
+    if bet_info[4] == winner_id:
+        return True
+    else:
+        return False
+
+    return
+
+
+def process_bets(connection, match_id, winner_id):
+    bets = get_bet_info_all(connection, match_id)
+
+    bet_count = 0
+    marble_pot = 0
+    loser_pot = 0
+    winner_count = 0
+    loser_count = 0
+    winner_pot = 0
+
+    if bets == 0:
+        return
+
+    bet_count = len(bets)
+
+    for x in bets:
+        if is_bet_win(connection, x[0], winner_id) is True:
+            winner_count += 1
+            winner_pot += x[1]
+        else:
+            subtract_marbles(connection, x[3], x[1])
+            loser_count += 1
+            loser_pot += x[1]
+            delete_bet(connection, x[0])
+        marble_pot += x[1]
+
+    bets = get_bet_info_all(connection, match_id)
+
+    for x in bets:
+        if is_bet_win(connection, x[0], winner_id) is True:
+            winner_pot_ratio = x[1]/winner_pot
+            if (loser_pot*winner_pot_ratio) < 1:
+                winnings = x[1]+1
+            else:
+                winnings = int(x[1] + (loser_pot*winner_pot_ratio))
+            if loser_count < 1:
+                winnings = x[1]*2
+            print(f'Winnings: {winnings}')
+            add_marbles(connection, x[3], winnings)
+            delete_bet(connection, x[0])
