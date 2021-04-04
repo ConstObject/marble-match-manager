@@ -11,6 +11,9 @@ def create_connection(db_file):
         print(e)
 
 
+db_connection = create_connection('database.db')
+
+
 def create_tables(connection):
     try:
         cur = connection.cursor()
