@@ -19,7 +19,7 @@ class EconCog(commands.Cog, name='Marbles'):
     async def set_marbles(self, ctx, member: discord.Member, marbles: int):
 
         if marbles < 0:
-            await code_message(ctx, 'You\'re a terrible person who made Soph have to program this.')
+            await code_message(ctx, 'You cannot set a users marbles to any negative number')
             return
 
         database_operation.update_marble_count(database.db_connection,
