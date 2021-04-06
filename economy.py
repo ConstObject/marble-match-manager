@@ -63,11 +63,11 @@ class EconCog(commands.Cog, name='Marbles'):
     @commands.guild_only()
     async def transfer(self, ctx, member: discord.Member, marbles: int):
         if ctx.author == member:
-            await code_message(ctx, 'You\'re a terrible person who made Soph have to program this.')
+            await code_message(ctx, 'You cannot send marbles to yourself')
             return
 
         if marbles < 1:
-            await code_message(ctx, 'You\'re a terrible person who made Soph have to program this.')
+            await code_message(ctx, 'You cannot send non positive amounts of marbles')
             return
 
         player_id1 = database_operation.get_player_id(database.db_connection, str(ctx.author), ctx.guild.id)[0]
