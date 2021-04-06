@@ -33,7 +33,7 @@ class EconCog(commands.Cog, name='Marbles'):
     @commands.has_role('Admin')
     async def add_marbles(self, ctx, member: discord.Member, marbles: int):
 
-        if marbles < 0:
+        if marbles < 1:
             await code_message(ctx, 'You\'re a terrible person who made Soph have to program this.')
             return
 
@@ -45,18 +45,13 @@ class EconCog(commands.Cog, name='Marbles'):
         await code_message(ctx, f'{ctx.author.display_name} has added {str(marbles)} to {member.display_name}\'s bank.'
                                 f'\nTheir new balance is {str(old_marbles + marbles)}!')
 
-    @commands.command(name='balance', help='Prints out your marble count')
-    @commands.guild_only()
-    async def balance(self, ctx):
-        player_id = database_operation.get_player_id(database.db_connection, str(ctx.author), ctx.guild.id)[0]
-        marbles = database_operation.get_marble_count(database.db_connection, player_id)
-
-        await code_message(ctx, f'You have {str(marbles)} marbles.')
-
     @commands.command(name='marbles', help='Prints their marble count')
     @commands.guild_only()
-    async def balance2(self, ctx, member: discord.Member):
-        player_id = database_operation.get_player_id(database.db_connection, str(member), ctx.guild.id)[0]
+    async def balance(self, ctx, member: discord.Member = None):
+        if member is None:
+            player_id = database_operation.get_player_id(database.db_connection, str(ctx.author), ctx.guild.id)[0]
+        else:
+            player_id = database_operation.get_player_id(database.db_connection, str(member), ctx.guild.id)[0]
         marbles = database_operation.get_marble_count(database.db_connection, player_id)
 
         await code_message(ctx, f'They have {str(marbles)} marbles.')
@@ -68,7 +63,7 @@ class EconCog(commands.Cog, name='Marbles'):
             await code_message(ctx, 'You\'re a terrible person who made Soph have to program this.')
             return
 
-        if marbles < 0:
+        if marbles < 1:
             await code_message(ctx, 'You\'re a terrible person who made Soph have to program this.')
             return
 

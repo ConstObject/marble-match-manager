@@ -1,6 +1,6 @@
 - [x] Make database, with users, matches, bets
 - [x] Transactional commands
 - [x] Basic marble match functionality
-- [] Side betting/predictions
-- [] Leaderboards
+- [x] Side betting/predictions
+- [x] Leaderboards
 - [] Marble match history
