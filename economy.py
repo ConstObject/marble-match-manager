@@ -10,6 +10,9 @@ class EconCog(commands.Cog, name='Marbles'):
     def __init__(self, bot):
         self.bot = bot
 
+    # def testing(self):
+    #     print('testing')
+
     @commands.command(name='set_marbles', help='Will set the users marble count to a new number')
     @commands.guild_only()
     @commands.has_role('Admin')

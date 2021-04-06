@@ -196,6 +196,13 @@ def delete_bet(connection, bet_id):
     connection.commit()
 
 
+def delete_bet_by_match_id(connection, match_id):
+    bets = get_bet_info_all(connection, match_id)
+    for bet in bets:
+        add_marbles(connection, bet[3], bet[1])
+        delete_bet(connection, bet[0])
+
+
 def add_marbles(connection, player_id, marbles):
     old_marbles = get_marble_count(connection, player_id)
     update_marble_count(connection, player_id, old_marbles + marbles)

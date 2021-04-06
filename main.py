@@ -20,12 +20,13 @@ token = os.getenv('DISCORD_TOKEN')
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='$', intents=intents, description='Manages Marble Matches')
 
-initial_cogs = ['cog.match']
-
 bot.add_cog(setup.InitCog(bot))
 bot.add_cog(match.MatchCog(bot))
 bot.add_cog(bet_control.BetCog(bot))
 bot.add_cog(stats.StatsCog(bot))
 bot.add_cog(economy.EconCog(bot))
+
+for cog in bot.cogs:
+    print(cog)
 
 bot.run(token)
