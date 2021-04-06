@@ -45,6 +45,23 @@ class EconCog(commands.Cog, name='Marbles'):
         await code_message(ctx, f'{ctx.author.display_name} has added {str(marbles)} to {member.display_name}\'s bank.'
                                 f'\nTheir new balance is {str(old_marbles + marbles)}!')
 
+    @commands.command(name='subtract_marbles', help='Will subtract from the users marble bank')
+    @commands.guild_only()
+    @commands.has_role('Admin')
+    async def add_marbles(self, ctx, member: discord.Member, marbles: int):
+
+        if marbles < 1:
+            await code_message(ctx, 'You cannot subtract non positive numbers to a users marble bank')
+            return
+
+        player_id = database_operation.get_player_id(database.db_connection, str(member), ctx.guild.id)[0]
+        old_marbles = database_operation.get_marble_count(database.db_connection, player_id)
+
+        database_operation.subtract_marbles(database.db_connection, player_id, marbles)
+
+        await code_message(ctx, f'{ctx.author.display_name} has removed {marbles} from {member.display_name}\'s bank.'
+                                f'\nTheir new balance is {str(old_marbles - marbles)}!')
+
     @commands.command(name='marbles', help='Prints their marble count')
     @commands.guild_only()
     async def balance(self, ctx, member: discord.Member = None):
