@@ -222,6 +222,11 @@ def add_player_loses(connection, player_id, loses):
 
 def subtract_marbles(connection, player_id, marbles):
     old_marbles = get_marble_count(connection, player_id)
+
+    if old_marbles - marbles < 0:
+        update_marble_count(connection, player_id, 0)
+        return
+
     update_marble_count(connection, player_id, old_marbles - marbles)
 
 
