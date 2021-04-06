@@ -34,7 +34,7 @@ class EconCog(commands.Cog, name='Marbles'):
     async def add_marbles(self, ctx, member: discord.Member, marbles: int):
 
         if marbles < 1:
-            await code_message(ctx, 'You\'re a terrible person who made Soph have to program this.')
+            await code_message(ctx, 'You cannot add non positive numbers to a users marble bank')
             return
 
         player_id = database_operation.get_player_id(database.db_connection, str(member), ctx.guild.id)[0]
