@@ -38,12 +38,12 @@ class EconCog(commands.Cog, name='Marbles'):
             return
 
         player_id = database_operation.get_player_id(database.db_connection, str(member), ctx.guild.id)[0]
-        old_marbles = database_operation.get_marble_count(database.db_connection, player_id)
 
         database_operation.add_marbles(database.db_connection, player_id, marbles)
 
-        await code_message(ctx, f'{ctx.author.display_name} has added {str(marbles)} to {member.display_name}\'s bank.'
-                                f'\nTheir new balance is {str(old_marbles + marbles)}!')
+        balance = database_operation.get_marble_count(database.db_connection, player_id)
+        await code_message(ctx, f'{ctx.author.display_name} has added {marbles} to {member.display_name}\'s bank.'
+                                f'\nTheir new balance is {balance}!')
 
     @commands.command(name='subtract_marbles', help='Will subtract from the users marble bank')
     @commands.guild_only()
