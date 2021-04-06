@@ -50,11 +50,14 @@ class EconCog(commands.Cog, name='Marbles'):
     async def balance(self, ctx, member: discord.Member = None):
         if member is None:
             player_id = database_operation.get_player_id(database.db_connection, str(ctx.author), ctx.guild.id)[0]
+            await code_message(ctx,
+                               f'You have {database_operation.get_marble_count(database.db_connection, player_id)}'
+                               f' marbles.')
         else:
             player_id = database_operation.get_player_id(database.db_connection, str(member), ctx.guild.id)[0]
-        marbles = database_operation.get_marble_count(database.db_connection, player_id)
-
-        await code_message(ctx, f'They have {str(marbles)} marbles.')
+            await code_message(ctx,
+                               f'They have {database_operation.get_marble_count(database.db_connection, player_id)} '
+                               f'marbles.')
 
     @commands.command(name='transfer', help='Transfers marbles from your bank to theirs')
     @commands.guild_only()
