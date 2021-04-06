@@ -248,8 +248,6 @@ def is_bet_win(connection, bet_id, winner_id):
     else:
         return False
 
-    return
-
 
 def process_bets(connection, match_id, winner_id):
     bets = get_bet_info_all(connection, match_id)
@@ -267,7 +265,7 @@ def process_bets(connection, match_id, winner_id):
     bet_count = len(bets)
 
     for x in bets:
-        if is_bet_win(connection, x[0], winner_id) is True:
+        if is_bet_win(connection, x[0], winner_id):
             winner_count += 1
             winner_pot += x[1]
         else:
@@ -280,7 +278,7 @@ def process_bets(connection, match_id, winner_id):
     bets = get_bet_info_all(connection, match_id)
 
     for x in bets:
-        if is_bet_win(connection, x[0], winner_id) is True:
+        if is_bet_win(connection, x[0], winner_id):
             winner_pot_ratio = x[1]/winner_pot
             if (loser_pot*winner_pot_ratio) < 1:
                 winnings = x[1]+1
