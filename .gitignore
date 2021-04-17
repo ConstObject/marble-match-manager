@@ -2,3 +2,4 @@
 /.idea
 /venv/
 /database.db
+/dev.db

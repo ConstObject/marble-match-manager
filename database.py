@@ -4,6 +4,7 @@ from sqlite3 import Error
 
 db_connection = None
 
+
 def create_connection(db_file):
     try:
         con = sqlite3.connect(db_file)
