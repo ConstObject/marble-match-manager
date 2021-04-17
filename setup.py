@@ -12,6 +12,7 @@ class InitCog(commands.Cog, name='Initializations'):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f'{self.bot.user.name} has connected to Discord.')
+        print(f'{self.bot.guilds}')
         await self.bot.change_presence(activity=discord.Game(name='$help'))
 
     @commands.Cog.listener()

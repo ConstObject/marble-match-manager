@@ -2,6 +2,7 @@ import sqlite3
 
 from sqlite3 import Error
 
+db_connection = None
 
 def create_connection(db_file):
     try:
@@ -9,9 +10,6 @@ def create_connection(db_file):
         return con
     except Error as e:
         print(e)
-
-
-db_connection = create_connection('database.db')
 
 
 def create_tables(connection):

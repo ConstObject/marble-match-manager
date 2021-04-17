@@ -12,10 +12,15 @@ from discord.ext import commands
 from discord_utils import code_message
 from dotenv import load_dotenv
 
-database.create_tables(database.db_connection)
-
 load_dotenv()
-token = os.getenv('DISCORD_TOKEN')
+if __debug__:
+    token = os.getenv('DISCORD_DEV_TOKEN')
+    database.db_connection = database.create_connection('dev.db')
+else:
+    token = os.getenv('DISCORD_TOKEN')
+    database.db_connection = database.create_connection('database.db')
+
+database.create_tables(database.db_connection)
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='$', intents=intents, description='Manages Marble Matches')
