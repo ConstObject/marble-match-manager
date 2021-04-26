@@ -102,3 +102,13 @@ class EconCog(commands.Cog, name='Marbles'):
         await code_message(ctx, f'Marbles transferred! Your new balances are:'
                                 f'\n{ctx.author.display_name}: {str(player1_marbles - marbles)} marbles'
                                 f'\n{member.display_name}: {str(player2_marbles + marbles)} marbles')
+
+    @commands.command(name='economy', help='Summery of the server economy')
+    @commands.guild_only()
+    async def summery(self, ctx):
+        players = database_operation.get_player_info_all_by_server(database.db_connection, ctx.guild.id)
+        marbles = 0
+        for user in players:
+            marbles += user[2]
+
+        await code_message(ctx, f'There are currently {marbles} marbles in circulation')
