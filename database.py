@@ -7,7 +7,7 @@ db_connection = None
 
 def create_connection(db_file):
     try:
-        con = sqlite3.connect(db_file)
+        con = sqlite3.connect(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
         return con
     except Error as e:
         print(e)
@@ -27,7 +27,7 @@ def create_tables(connection):
 
         cur.execute("CREATE TABLE IF NOT EXISTS matches_history(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
                     "amount INTEGER NOT NULL, participant1 INTEGER NOT NULL, "
-                    "participant2 INTEGER NOT NULL, winner_id INTEGER NOT NULL, "
+                    "participant2 INTEGER NOT NULL, winner_id INTEGER NOT NULL, match_time timestamp, "
                     "FOREIGN KEY(participant1) REFERENCES users(id), "
                     "FOREIGN KEY(participant2) REFERENCES users(id), "
                     "FOREIGN KEY(winner_id) REFERENCES users(id))")
@@ -39,7 +39,7 @@ def create_tables(connection):
 
         cur.execute("CREATE TABLE IF NOT EXISTS bets_history(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
                     "amount INTEGER NOT NULL, match_id INTEGER NOT NULL, better_id INTEGER NOT NULL, "
-                    "participant1 INTEGER NOT NULL, winner_id INTEGER NOT NULL, "
+                    "participant1 INTEGER NOT NULL, winner_id INTEGER NOT NULL, bet_time timestamp, "
                     "FOREIGN KEY(match_id) REFERENCES matches_history(id), FOREIGN KEY(better_id) REFERENCES users(id),"
                     " FOREIGN KEY(participant1) REFERENCES users(id), "
                     "FOREIGN KEY(winner_id) REFERENCES users(id))")

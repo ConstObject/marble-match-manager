@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 import database
 
 from sqlite3 import Error
@@ -30,20 +31,20 @@ def create_bet(connection, bet_id, amount, match_id, better_id, participant1):
     return cur.lastrowid
 
 
-def create_match_history(connection, match_id, amount, participant1, participant2, winner_id):
+def create_match_history(connection, match_id, amount, participant1, participant2, winner_id, time):
     cur = connection.cursor()
-    cur.execute("INSERT INTO matches_history VALUES (?, ?, ?, ?, ?)",
-                [match_id, amount, participant1, participant2, winner_id])
+    cur.execute("INSERT INTO matches_history VALUES (?, ?, ?, ?, ?, ?)",
+                [match_id, amount, participant1, participant2, winner_id, time])
 
     connection.commit()
     print(cur.lastrowid)
     return cur.lastrowid
 
 
-def create_bet_history(connection, bet_id, amount, match_id, better_id, participant1, winner_id):
+def create_bet_history(connection, bet_id, amount, match_id, better_id, participant1, winner_id, time):
     cur = connection.cursor()
-    cur.execute("INSERT INTO bets_history VALUES (?, ?, ?, ?, ?, ?)",
-                [bet_id, amount, match_id, better_id, participant1, winner_id])
+    cur.execute("INSERT INTO bets_history VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [bet_id, amount, match_id, better_id, participant1, winner_id, time])
 
     connection.commit()
     print(cur.lastrowid)
@@ -97,6 +98,30 @@ def get_match_info_by_id(connection, match_id):
     cur.execute("SELECT * FROM matches WHERE id=?", [match_id])
 
     sqlquery = cur.fetchone()
+
+    if sqlquery is not None:
+        return sqlquery
+    else:
+        return 0
+
+
+def get_match_history_info(connection, match_id):
+    cur = connection.cursor()
+    cur.execute("SELECT * FROM matches_history WHERE id=?", [match_id])
+
+    sqlquery = cur.fetchone()
+
+    if sqlquery is not None:
+        return sqlquery
+    else:
+        return 0
+
+
+def get_match_history_info_all(connection, player_id):
+    cur = connection.cursor()
+    cur.execute("SELECT * FROM matches_history WHERE participant1=? OR participant2=?", [player_id, player_id])
+
+    sqlquery = cur.fetchall()
 
     if sqlquery is not None:
         return sqlquery
@@ -172,6 +197,18 @@ def get_bet_info_all(connection, match_id):
     cur.execute("SELECT * FROM bets WHERE match_id=?", [match_id])
 
     sqlquery = cur.fetchall()
+
+    if sqlquery is not None:
+        return sqlquery
+    else:
+        return 0
+
+
+def get_bet_history_info(connection, bet_id):
+    cur = connection.cursor()
+    cur.execute("SELECT * FROM bets_history WHERE id=?", [bet_id])
+
+    sqlquery = cur.fetchone()
 
     if sqlquery is not None:
         return sqlquery
@@ -308,5 +345,5 @@ def process_bets(connection, match_id, winner_id):
                 winnings = x[1]*2
             print(f'Winnings: {winnings}')
             add_marbles(connection, x[3], winnings)
-            create_bet_history(connection, x[0], x[1], x[2], x[3], x[4], winner_id)
+            create_bet_history(connection, x[0], x[1], x[2], x[3], x[4], winner_id, datetime.datetime.utcnow())
             delete_bet(connection, x[0])
