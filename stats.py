@@ -63,11 +63,10 @@ class StatsCog(commands.Cog, name='Stats'):
                                             f'with a win-rate of {player[3]}%')
             return
 
-        text = "```Leaderboard top 10 win-rate\n\n"
+        text = "Leaderboard top 10 win-rate\n\n"
 
         for player in players[0:10]:
             text += (f'#{players.index(player) + 1}. {player[0]}: %.0f' % player[3]) + '%\n'
-        text += "```"
 
         await code_message(ctx, text)
 
