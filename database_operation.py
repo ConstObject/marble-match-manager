@@ -216,6 +216,18 @@ def get_bet_history_info(connection, bet_id):
         return 0
 
 
+def get_bet_history_info_all(connection, better_id):
+    cur = connection.cursor()
+    cur.execute("SELECT * FROM bet_history WHERE better_id=?", [better_id])
+
+    sqlquery = cur.fetchall()
+
+    if sqlquery is not None:
+        return sqlquery
+    else:
+        return 0
+
+
 def find_match_by_player_id(connection, player_id):
     cur = connection.cursor()
     cur.execute("SELECT * FROM matches WHERE participant1=? OR participant2=?", [player_id, player_id])
