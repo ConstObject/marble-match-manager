@@ -16,17 +16,6 @@ class HistoryCog(commands.Cog, name='History'):
         date2 = date.replace(tzinfo=pytz.utc).astimezone(pytz.timezone('US/Eastern'))
         return pytz.timezone('US/Eastern').normalize(date2)
 
-    @commands.command(name='Test1', help='Help')
-    @commands.guild_only()
-    async def test1(self, ctx):
-        example = datetime.datetime.utcnow()
-        match_data = database_operation.get_match_history_info(database.db_connection, 3)
-        print(example)
-        # example.replace(tzinfo=datetime.tzinfo.tzname('US/Eastern'))
-        example2 = example.replace(tzinfo=pytz.utc).astimezone(pytz.timezone('US/Eastern'))
-        print(pytz.timezone('US/Eastern').normalize(example2))
-        # print(match_data[5])
-
     @commands.command(name='match_history', help='Prints out a users match history')
     @commands.guild_only()
     async def match_history(self, ctx, member: discord.Member = None, vs: discord.Member = None):
@@ -64,5 +53,40 @@ class HistoryCog(commands.Cog, name='History'):
             text += f'{du.get_member_by_player_id(ctx, database.db_connection, matches[3]).display_name}\t'
 
             text += f'{self.utc_to_est(matches[5]).strftime("%x %X")}\n'
+
+        await du.code_message(ctx, text)
+
+    @commands.command(name='bet_history', help='Prints out a users bet history')
+    @commands.guild_only()
+    async def bet_history(self, ctx, member: discord.Member = None, bet_target: discord.Member = None):
+
+        if not member:
+            member = ctx.author
+
+        if bet_target:
+            bet_target_id = database_operation.get_player_id(database.db_connection, str(bet_target), ctx.guild.id)[0]
+
+        better_id = database_operation.get_player_id(database.db_connection, str(member), ctx.guild.id)[0]
+        bet_history = database_operation.get_bet_history_info_all(database.db_connection, better_id)
+
+        if bet_history == 0 or bet_history == []:
+            await du.code_message(ctx, 'No bet history')
+            return
+
+        text = ''
+
+        for bet in bet_history:
+            if bet_target:
+                if bet[4] != bet_target_id:
+                    continue
+            text += f'{bet[1]}\t'
+            text += f'{du.get_member_by_player_id(ctx, database.db_connection, bet[4]).display_name}\t'
+
+            if bet[4] == bet[5]:
+                text += 'Won\t'
+            else:
+                text += 'Lost\t'
+
+            text += f'{self.utc_to_est(bet[6]).strftime("%x %X")}\n'
 
         await du.code_message(ctx, text)
