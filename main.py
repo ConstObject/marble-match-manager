@@ -1,4 +1,5 @@
 import os
+
 import discord
 import database
 import database_operation
@@ -7,6 +8,7 @@ import setup
 import bet_control
 import stats
 import economy
+import history
 
 from discord.ext import commands
 from discord_utils import code_message
@@ -30,6 +32,7 @@ bot.add_cog(match.MatchCog(bot))
 bot.add_cog(bet_control.BetCog(bot))
 bot.add_cog(stats.StatsCog(bot))
 bot.add_cog(economy.EconCog(bot))
+bot.add_cog(history.HistoryCog(bot))
 
 for cog in bot.cogs:
     print(cog)
