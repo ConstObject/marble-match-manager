@@ -19,7 +19,18 @@ class HistoryCog(commands.Cog, name='History'):
     @commands.command(name='match_history', help='Prints out a users match history')
     @commands.guild_only()
     async def match_history(self, ctx, member: discord.Member = None, vs: discord.Member = None):
+        """Show match history of user.
 
+        Example:
+             - `$match_history @Sophia'
+             - `$match_history @Ness'
+
+        **Arguments**
+
+        - `<member>` The user to show the match history of. If omitted, defaults to your own history
+        - `<vs>` The user to limit the match history to only games with them
+
+        """
         if not member:
             member = ctx.author
 
