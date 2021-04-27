@@ -1,6 +1,7 @@
 import discord
 import database
 import database_operation
+import datetime
 from discord_utils import code_message
 from discord.ext import commands
 
@@ -115,7 +116,7 @@ class MatchCog(commands.Cog, name='Matches'):
         database_operation.add_player_loses(database.db_connection, loser_id, 1)
 
         database_operation.create_match_history(database.db_connection, match_id, match_info[1], match_info[3],
-                                                match_info[4], winner_id)
+                                                match_info[4], winner_id, datetime.datetime.utcnow())
 
         database_operation.process_bets(database.db_connection, match_id, winner_id)
 
