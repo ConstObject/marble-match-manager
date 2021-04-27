@@ -218,7 +218,7 @@ def get_bet_history_info(connection, bet_id):
 
 def get_bet_history_info_all(connection, better_id):
     cur = connection.cursor()
-    cur.execute("SELECT * FROM bet_history WHERE better_id=?", [better_id])
+    cur.execute("SELECT * FROM bets_history WHERE better_id=?", [better_id])
 
     sqlquery = cur.fetchall()
 
