@@ -4,7 +4,7 @@ import database_operation
 
 
 async def code_message(ctx, text, color=0):
-    await ctx.send(f'```\n{text}```')
+    return await ctx.send(f'```\n{text}```')
 
 
 def get_member_by_player_id(ctx, connection, player_id):
