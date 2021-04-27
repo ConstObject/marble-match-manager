@@ -65,6 +65,9 @@ class HistoryCog(commands.Cog, name='History'):
 
             text += f'{self.utc_to_est(matches[5]).strftime("%x %X")}\n'
 
+        if text.len > 2000:
+            await du.code_message(ctx, 'Match history too long to send')
+
         await du.code_message(ctx, text)
 
     @commands.command(name='bet_history', help='Prints out a users bet history')
