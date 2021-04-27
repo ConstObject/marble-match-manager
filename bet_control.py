@@ -72,3 +72,7 @@ class BetCog(commands.Cog, name='Bets'):
                 await code_message(ctx, 'You need to enter a match id')
             elif error.param.name == 'marbles':
                 await code_message(ctx, 'You need to enter a marble amount')
+
+
+def setup(bot):
+    bot.add_cog(BetCog(bot))

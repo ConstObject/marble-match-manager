@@ -145,3 +145,7 @@ class EconCog(commands.Cog, name='Marbles'):
         await code_message(ctx, f'There are currently {sum} marbles in circulation\n'
                                 f'The current mean marble count is {mean}\n'
                                 f'Inequality index is {gini}\n')
+
+
+def setup(bot):
+    bot.add_cog(EconCog(bot))

@@ -90,3 +90,7 @@ class HistoryCog(commands.Cog, name='History'):
             text += f'{self.utc_to_est(bet[6]).strftime("%x %X")}\n'
 
         await du.code_message(ctx, text)
+
+
+def setup(bot):
+    bot.add_cog(HistoryCog(bot))

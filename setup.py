@@ -51,3 +51,7 @@ class InitCog(commands.Cog, name='Initializations'):
                f'```'
 
         await ctx.send(text)
+
+
+def setup(bot):
+    bot.add_cog(InitCog(bot))

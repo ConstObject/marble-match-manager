@@ -155,9 +155,6 @@ class MatchCog(commands.Cog, name='Matches'):
         database_operation.delete_bet_by_match_id(database.db_connection, match_id)
         await code_message(ctx, f'Closed match {match_id}.')
 
-    # @commands.command(name='testing')
-    # @commands.guild_only()
-    # async def test(self, ctx):
-    #     marbles = self.bot.get_cog('Marbles')
-    #     marbles.testing()
-    #     await marbles.balance(ctx)
+
+def setup(bot):
+    bot.add_cog(MatchCog(bot))

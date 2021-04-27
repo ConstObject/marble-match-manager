@@ -70,3 +70,7 @@ class StatsCog(commands.Cog, name='Stats'):
         text += "```"
 
         await code_message(ctx, text)
+
+
+def setup(bot):
+    bot.add_cog(StatsCog(bot))

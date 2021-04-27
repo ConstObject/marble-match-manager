@@ -2,17 +2,11 @@ import os
 
 import discord
 import database
-import database_operation
-import match
-import setup
-import bet_control
-import stats
-import economy
-import history
 
 from discord.ext import commands
-from discord_utils import code_message
 from dotenv import load_dotenv
+
+extensions_list = ['setup', 'match', 'bet_control', 'stats', 'economy', 'history']
 
 load_dotenv()
 if __debug__:
@@ -27,12 +21,12 @@ database.create_tables(database.db_connection)
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='$', intents=intents, description='Manages Marble Matches')
 
-bot.add_cog(setup.InitCog(bot))
-bot.add_cog(match.MatchCog(bot))
-bot.add_cog(bet_control.BetCog(bot))
-bot.add_cog(stats.StatsCog(bot))
-bot.add_cog(economy.EconCog(bot))
-bot.add_cog(history.HistoryCog(bot))
+for extension in extensions_list:
+    try:
+        bot.load_extension(extension)
+    except Exception as e:
+        exc = '{}: {}'.format(type(e).__name__, e)
+        print('Failed to load extension {}\n{}'.format(extension, exc))
 
 for cog in bot.cogs:
     print(cog)
