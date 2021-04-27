@@ -118,16 +118,13 @@ class EconCog(commands.Cog, name='Marbles'):
     @commands.guild_only()
     async def ex_summery(self, ctx):
         count = 0
-        sum = 0
-        mean = 0
+        sum_marbles = 0
         marbles = []
         players = database_operation.get_player_info_all_by_server(database.db_connection, ctx.guild.id)
         for user in players:
-            sum += user[2]
+            sum_marbles += user[2]
             marbles.append(float(user[2]))
             count += 1
-
-        mean = int(sum/count)
 
         # TODO: Add other calculations for server economy
 
@@ -142,8 +139,8 @@ class EconCog(commands.Cog, name='Marbles'):
         n = array.shape[0]
         gini = ((np.sum((2 * index - n - 1) * array)) / (n * np.sum(array)))
 
-        await code_message(ctx, f'There are currently {sum} marbles in circulation\n'
-                                f'The current mean marble count is {mean}\n'
+        await code_message(ctx, f'There are currently {sum_marbles} marbles in circulation\n'
+                                f'The current mean marble count is {int(sum_marbles / count)}\n'
                                 f'Inequality index is {gini}\n')
 
 
