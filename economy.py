@@ -3,6 +3,7 @@ import database
 import database_operation
 from discord_utils import code_message
 from discord.ext import commands
+import numpy as np
 
 
 class EconCog(commands.Cog, name='Marbles'):
@@ -48,7 +49,7 @@ class EconCog(commands.Cog, name='Marbles'):
     @commands.command(name='subtract_marbles', help='Will subtract from the users marble bank')
     @commands.guild_only()
     @commands.has_role('Admin')
-    async def add_marbles(self, ctx, member: discord.Member, marbles: int):
+    async def sub_marbles(self, ctx, member: discord.Member, marbles: int):
 
         if marbles < 1:
             await code_message(ctx, 'You cannot subtract non positive numbers to a users marble bank')
@@ -112,3 +113,35 @@ class EconCog(commands.Cog, name='Marbles'):
             marbles += user[2]
 
         await code_message(ctx, f'There are currently {marbles} marbles in circulation')
+
+    @commands.command(name='summery', help='Prints a more detailed summery of the server economy')
+    @commands.guild_only()
+    async def ex_summery(self, ctx):
+        count = 0
+        sum = 0
+        mean = 0
+        marbles = []
+        players = database_operation.get_player_info_all_by_server(database.db_connection, ctx.guild.id)
+        for user in players:
+            sum += user[2]
+            marbles.append(float(user[2]))
+            count += 1
+
+        mean = int(sum/count)
+
+        # TODO: Add other calculations for server economy
+
+        # Gini coefficient
+        array = np.array(marbles)
+        array = array.flatten()
+        if np.amin(array) < 0:
+            array -= np.amin(array)
+        array += 0.0000001
+        array = np.sort(array)
+        index = np.arange(1, array.shape[0] + 1)
+        n = array.shape[0]
+        gini = ((np.sum((2 * index - n - 1) * array)) / (n * np.sum(array)))
+
+        await code_message(ctx, f'There are currently {sum} marbles in circulation\n'
+                                f'The current mean marble count is {mean}\n'
+                                f'Inequality index is {gini}\n')
