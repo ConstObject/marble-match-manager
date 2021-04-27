@@ -114,6 +114,9 @@ class MatchCog(commands.Cog, name='Matches'):
         database_operation.add_player_win(database.db_connection, winner_id, 1)
         database_operation.add_player_loses(database.db_connection, loser_id, 1)
 
+        database_operation.create_match_history(database.db_connection, match_id, match_info[1], match_info[3],
+                                                match_info[4], winner_id)
+
         database_operation.process_bets(database.db_connection, match_id, winner_id)
 
         database_operation.delete_match(database.db_connection, match_id)

@@ -30,6 +30,26 @@ def create_bet(connection, bet_id, amount, match_id, better_id, participant1):
     return cur.lastrowid
 
 
+def create_match_history(connection, match_id, amount, participant1, participant2, winner_id):
+    cur = connection.cursor()
+    cur.execute("INSERT INTO matches_history VALUES (?, ?, ?, ?, ?)",
+                [match_id, amount, participant1, participant2, winner_id])
+
+    connection.commit()
+    print(cur.lastrowid)
+    return cur.lastrowid
+
+
+def create_bet_history(connection, bet_id, amount, match_id, better_id, participant1, winner_id):
+    cur = connection.cursor()
+    cur.execute("INSERT INTO bets_history VALUES (?, ?, ?, ?, ?, ?)",
+                [bet_id, amount, match_id, better_id, participant1, winner_id])
+
+    connection.commit()
+    print(cur.lastrowid)
+    return cur.lastrowid
+
+
 def update_match_activity(connection, match_id, active=1):
     cur = connection.cursor()
     cur.execute("UPDATE matches SET active = ? WHERE id = ?", [active, match_id])
@@ -288,4 +308,5 @@ def process_bets(connection, match_id, winner_id):
                 winnings = x[1]*2
             print(f'Winnings: {winnings}')
             add_marbles(connection, x[3], winnings)
+            create_bet_history(connection, x[0], x[1], x[2], x[3], x[4], winner_id)
             delete_bet(connection, x[0])
