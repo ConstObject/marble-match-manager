@@ -186,7 +186,7 @@ class HistoryCog(commands.Cog, name='History'):
             bet_list.append(text)
 
         text = ''
-        pages = math.ceil(len(bet_list))
+        pages = math.ceil(len(bet_list)/10)
         cur_page = pages-1
         active = True
 
