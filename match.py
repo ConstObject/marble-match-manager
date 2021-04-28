@@ -40,26 +40,25 @@ class MatchCog(commands.Cog, name='Matches'):
         challenger = du.get_id_by_member(ctx, database.db_connection, ctx.author)
         recipient = du.get_id_by_member(ctx, database.db_connection, member)
 
-        if database_operation.find_match_by_player_id(database.db_connection, challenger[0]) != 0:
+        if database_operation.find_match_by_player_id(database.db_connection, challenger) != 0:
             await du.code_message(ctx, 'You already have an match going')
             return
 
-        if database_operation.find_match_by_player_id(database.db_connection, recipient[0]) != 0:
+        if database_operation.find_match_by_player_id(database.db_connection, recipient) != 0:
             await du.code_message(ctx, 'They already have a match going')
             return
 
-        challenger_marbles = database_operation.get_marble_count(database.db_connection, challenger[0])
+        challenger_marbles = database_operation.get_marble_count(database.db_connection, challenger)
         if challenger_marbles < marbles:
             await du.code_message(ctx, 'You do not have enough marbles for this match')
             return
 
-        recipient_marbles = database_operation.get_marble_count(database.db_connection, recipient[0])
+        recipient_marbles = database_operation.get_marble_count(database.db_connection, recipient)
         if recipient_marbles < marbles:
             await du.code_message(ctx, 'They do not have enough marbles for this match')
             return
 
-        match_id = database_operation.create_match(database.db_connection, None, marbles, 0, challenger[0],
-                                                   recipient[0])
+        match_id = database_operation.create_match(database.db_connection, None, marbles, 0, challenger, recipient)
 
         await du.code_message(ctx, f'{ctx.author.display_name} challenged {member.display_name} '
                                    f'to a marble match for {str(marbles)} '
