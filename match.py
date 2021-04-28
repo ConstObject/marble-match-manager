@@ -8,12 +8,26 @@ from discord.ext import commands
 
 class MatchCog(commands.Cog, name='Matches'):
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.command(name='match', help='Challenge a user to a marble match, for all the marbles')
     @commands.guild_only()
-    async def match(self, ctx, member: discord.Member, marbles: int):
+    async def match(self, ctx: commands.Context, member: discord.Member, marbles: int):
+        """Challenge a user to a marble match
+
+        Examples:
+            - `$match @Sophia 10`
+            - `$match @Ness 1`
+
+        **Arguments**
+
+        - `<ctx>` The context used to send confirmations.
+        - `<member>` The user you want to challenge to a marble match
+        - `<marbles>` The amount of marbles for the match
+
+        """
+
         if ctx.author == member:
             await du.code_message(ctx, 'You\'re a terrible person who made Soph have to program this.\nNo self matches')
             return
@@ -64,7 +78,18 @@ class MatchCog(commands.Cog, name='Matches'):
 
     @commands.command(name='accept', help='Accept a challenge')
     @commands.guild_only()
-    async def accept(self, ctx):
+    async def accept(self, ctx: commands.Context):
+        """Accepts a match you were challenged to
+
+        Examples:
+            - `$accept`
+
+        **Arguments**
+
+        - `<ctx>` The context used to send confirmations.
+
+        """
+
         player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
         match_id = database_operation.find_match_by_player_id(database.db_connection, player_id)
 
@@ -78,7 +103,18 @@ class MatchCog(commands.Cog, name='Matches'):
 
     @commands.command(name='start', help='Start the match and close betting')
     @commands.guild_only()
-    async def match_start(self, ctx):
+    async def match_start(self, ctx: commands.Context):
+        """Starts a marble match
+
+        Examples:
+            - `$start`
+
+        **Arguments**
+
+        - `<ctx>` The context used to send confirmations.
+
+        """
+
         player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
         match_id = database_operation.find_match_by_player_id(database.db_connection, player_id)
 
@@ -91,7 +127,19 @@ class MatchCog(commands.Cog, name='Matches'):
 
     @commands.command(name='winner', help='Selects the winner of a marble match, and transfers marbles')
     @commands.guild_only()
-    async def match_win(self, ctx, member: discord.Member = None):
+    async def match_win(self, ctx: commands.Context, member: discord.Member = None):
+        """Sets the winner of a marble match
+
+        Examples:
+            - `$winner @Sophia`
+            - `$winner @Ness`
+
+        **Arguments**
+
+        - `<ctx>` The context used to send confirmations.
+        - `<member>' Member to select as the winner.
+
+        """
 
         if member is None:
             member = ctx.author
@@ -126,7 +174,18 @@ class MatchCog(commands.Cog, name='Matches'):
 
     @commands.command(name='current', help='Lists info about you\'re current match')
     @commands.guild_only()
-    async def current(self, ctx):
+    async def current(self, ctx: commands.Context):
+        """Lists your current marble match
+
+        Examples:
+            - `$current`
+
+        **Arguments**
+
+        - `<ctx>` The context used to send confirmations.
+
+        """
+
         player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
         match_id = database_operation.find_match_by_player_id(database.db_connection, player_id)
 
@@ -147,7 +206,18 @@ class MatchCog(commands.Cog, name='Matches'):
 
     @commands.command(name='close', help='Closes your pending match, if it has not been started')
     @commands.guild_only()
-    async def close_current_match(self, ctx):
+    async def close_current_match(self, ctx: commands.Context):
+        """Closes your active marble match
+
+        Examples:
+            - `$close`
+
+        **Arguments**
+
+        - `<ctx>` The context used to send confirmations
+
+        """
+
         player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
         match_id = database_operation.find_match_by_player_id(database.db_connection, player_id)
 
