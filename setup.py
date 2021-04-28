@@ -7,7 +7,7 @@ from discord.ext import commands
 
 def has_database_permission():
     async def predicate(ctx):
-        return ctx.author.id == 126913881879740416
+        return ctx.author.id == 126913881879740416 or commands.has_role('Admin')
     return commands.check(predicate)
 
 
