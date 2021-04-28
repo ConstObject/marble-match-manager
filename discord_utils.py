@@ -28,4 +28,4 @@ def get_id_by_member(ctx: commands.Context, connection: sqlite3.Connection, memb
     if isinstance(ctx.channel, discord.DMChannel):
         return 0
 
-    return database_operation.get_player_id(connection, str(member), ctx.guild.id)[0]
+    return database_operation.get_player_id(connection, str(member), ctx.guild.id)

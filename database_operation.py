@@ -132,7 +132,13 @@ def get_match_history_info_all(connection, player_id):
 def get_player_id(connection, username, server_id):
     cur = connection.cursor()
     cur.execute("SELECT * FROM users WHERE username=? AND server_id=?", [username, server_id])
-    return cur.fetchone()
+
+    sqlquery = cur.fetchone()
+
+    if sqlquery is not None:
+        return sqlquery[0]
+    else:
+        return 0
 
 
 def get_player_info(connection, player_id):
