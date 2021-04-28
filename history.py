@@ -142,7 +142,9 @@ class HistoryCog(commands.Cog, name='History'):
         """Prints bet history of user
 
         Example:
-            - ``
+             - `$match_history @Sophia'
+             - `$match_history @Ness'
+             - `$match_history @Sophia @Ness'
 
         **Arguments**
 
