@@ -1,6 +1,8 @@
+import sqlite3
 import discord
 import database
 import database_operation
+from discord.ext import commands
 
 
 async def code_message(ctx, text, color=0):
@@ -19,3 +21,11 @@ def get_member_by_player_id(ctx, connection, player_id):
             return member
 
     return 0
+
+
+def get_id_by_member(ctx: commands.Context, connection: sqlite3.Connection, member: discord.Member) -> int:
+
+    if isinstance(ctx.channel, discord.DMChannel):
+        return 0
+
+    return database_operation.get_player_id(connection, str(member), ctx.guild.id)[0]
