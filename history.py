@@ -141,7 +141,7 @@ class HistoryCog(commands.Cog, name='History'):
     async def bet_history(self, ctx, member: discord.Member = None, bet_target: discord.Member = None):
         """Prints bet history of user
 
-        Example:
+        Examples:
              - `$bet_history @Sophia'
              - `$bet_history @Ness'
              - `$bet_history @Sophia @Ness'
@@ -152,6 +152,7 @@ class HistoryCog(commands.Cog, name='History'):
         - '<bet_target>' The user you want to limit bets on to.
 
         """
+
         if not member:
             member = ctx.author
 
