@@ -32,6 +32,10 @@ class BetCog(commands.Cog, name='Bets'):
         player_id = du.get_id_by_member(ctx, database.db_connection, winner)
         better_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
 
+        if database_operation.get_marble_count(database.db_connection, player_id) < marbles:
+            await du.code_message(ctx, 'You do not have enough marbles for this bet')
+            return
+
         match_info = database_operation.get_match_info_by_id(database.db_connection, match_id)
 
         if match_info == 0:
@@ -55,14 +59,17 @@ class BetCog(commands.Cog, name='Bets'):
                 return
 
         bet_id = database_operation.find_bet(database.db_connection, match_id, better_id)
+        bet_info = database_operation.get_bet_info(database.db_connection, bet_id)
 
         if bet_id != 0:
             if marbles == 0:
                 database_operation.delete_bet(database.db_connection, bet_id)
+                database_operation.add_marbles(database.db_connection, better_id, bet_info[1])
                 await du.code_message(ctx, 'Bet deleted')
 
             bet_info = database_operation.get_bet_info(database.db_connection, bet_id)
             database_operation.add_marbles(database.db_connection, better_id, bet_info[1])
+            database_operation.subtract_marbles(database.db_connection, better_id, marbles)
             database_operation.update_bet(database.db_connection, bet_id, player_id, marbles)
             await du.code_message(ctx, 'Bet updated')
             return

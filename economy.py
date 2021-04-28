@@ -122,7 +122,7 @@ class EconCog(commands.Cog, name='Marbles'):
                                   f'You have {database_operation.get_marble_count(database.db_connection, player_id)}'
                                   f' marbles.')
         else:
-            player_id = du.get_id_by_member(database.db_connection, database.db_connection, member)
+            player_id = du.get_id_by_member(ctx, database.db_connection, member)
             await du.code_message(ctx,
                                   f'They have {database_operation.get_marble_count(database.db_connection, player_id)} '
                                   f'marbles.')
