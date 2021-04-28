@@ -12,25 +12,33 @@ from discord.ext import commands
 
 class HistoryCog(commands.Cog, name='History'):
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    def utc_to_est(self, date):
+    @staticmethod
+    def utc_to_est(date: datetime.datetime):
+        """Returns datetime converted from utc to est
+
+        **Arguments**
+        - `<date>` utc date to be converted to est
+
+        """
         date2 = date.replace(tzinfo=pytz.utc).astimezone(pytz.timezone('US/Eastern'))
         return pytz.timezone('US/Eastern').normalize(date2)
 
     @commands.command(name='match_history', help='Prints out a users match history')
     @commands.guild_only()
-    async def match_history(self, ctx, member: discord.Member = None, vs: discord.Member = None):
+    async def match_history(self, ctx: commands.Context, member: discord.Member = None, vs: discord.Member = None):
         """Show match history of user.
 
         Example:
              - `$match_history @Sophia'
              - `$match_history @Ness'
+             - `$match_history @Sophia @Ness'
 
         **Arguments**
 
-        - `<member>` The user to show the match history of. If omitted, defaults to your own history
+        - `<member>` The user to show the match history of. If omitted, defaults to your own history.
         - `<vs>` The user to limit the match history to only games with them
 
         """
@@ -71,8 +79,6 @@ class HistoryCog(commands.Cog, name='History'):
 
             text += f'{self.utc_to_est(matches[5]).strftime("%x %X")}\n'
             match_list.append(text)
-
-
 
         text = ''
         pages = math.ceil(len(match_list)/10)
@@ -133,7 +139,17 @@ class HistoryCog(commands.Cog, name='History'):
     @commands.command(name='bet_history', help='Prints out a users bet history')
     @commands.guild_only()
     async def bet_history(self, ctx, member: discord.Member = None, bet_target: discord.Member = None):
+        """Prints bet history of user
 
+        Example:
+            - ``
+
+        **Arguments**
+
+        - `<member>` The user to who's bet history you want to print. If omitted defaults to your own history.
+        - '<bet_target>' The user you want to limit bets on to.
+
+        """
         if not member:
             member = ctx.author
 
