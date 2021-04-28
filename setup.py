@@ -1,6 +1,7 @@
 import discord
 import database
 import database_operation
+import discord_utils as du
 from discord.ext import commands
 
 
@@ -23,7 +24,7 @@ class InitCog(commands.Cog, name='Initializations'):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        if database_operation.get_player_id(database.db_connection, str(member), member.guild.id) is None:
+        if not database_operation.get_player_id(database.db_connection, str(member), member.guild.id):
             database_operation.create_user(database.db_connection, None, str(member), 10, member.guild.id)
             print(f'Added {member.name} to database')
 
@@ -35,7 +36,7 @@ class InitCog(commands.Cog, name='Initializations'):
             if database_operation.get_player_id(database.db_connection, str(members), ctx.guild.id) is None:
                 database_operation.create_user(database.db_connection, None, str(members), 10, ctx.guild.id)
                 print(f'Added {members.name} to database')
-        await ctx.send('Any members not added to the database have been added')
+        await du.code_message(ctx, 'Any members not added to the database have been added')
 
     @commands.command(name='info', help='Prints latest version info')
     @commands.guild_only()
