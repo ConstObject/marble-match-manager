@@ -23,8 +23,8 @@ class EconCog(commands.Cog, name='Marbles'):
             await du.code_message(ctx, 'You cannot set a users marbles to any negative number')
             return
 
-        database_operation.update_marble_count(database.db_connection, du.get_id_by_member(ctx, database.db_connection,
-                                                                                           member), marbles)
+        database_operation.update_marble_count(database.db_connection,
+                                               du.get_id_by_member(ctx, database.db_connection, member), marbles)
         await du.code_message(ctx, f'Set {member.display_name}\'s marbles to {str(marbles)}')
 
     @commands.command(name='add_marbles', help='Will add to the users marble bank')
