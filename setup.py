@@ -33,7 +33,7 @@ class InitCog(commands.Cog, name='Initializations'):
     @has_database_permission()
     async def init(self, ctx):
         for members in ctx.guild.members:
-            if database_operation.get_player_id(database.db_connection, str(members), ctx.guild.id) is None:
+            if not du.get_id_by_member(ctx, database.db_connection, members):
                 database_operation.create_user(database.db_connection, None, str(members), 10, ctx.guild.id)
                 print(f'Added {members.name} to database')
         await du.code_message(ctx, 'Any members not added to the database have been added')
