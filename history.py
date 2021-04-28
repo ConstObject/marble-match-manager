@@ -83,12 +83,16 @@ class HistoryCog(commands.Cog, name='History'):
             if i < len(match_list):
                 text += str(match_list[i])
 
-        text += f'Page {cur_page+1} of {pages}\n'
+        if pages > 1:
+            text += f'Page {cur_page+1} of {pages}\n'
+        else:
+            active = False
 
         message = await du.code_message(ctx, text)
 
-        await message.add_reaction('\U00002B05')
-        await message.add_reaction('\U000027A1')
+        if pages > 1:
+            await message.add_reaction('\U00002B05')
+            await message.add_reaction('\U000027A1')
 
         def check(reaction, user):
             return user == ctx.author and str(reaction.emoji) in ['\U00002B05', '\U000027A1']
