@@ -1,7 +1,7 @@
 import discord
 import database
 import database_operation
-from discord_utils import code_message
+import discord_utils as du
 from discord.ext import commands
 
 
@@ -15,10 +15,10 @@ class StatsCog(commands.Cog, name='Stats'):
     async def wins(self, ctx, member: discord.Member = None):
 
         if member is None:
-            player_id = database_operation.get_player_id(database.db_connection, str(ctx.author), ctx.guild.id)[0]
+            player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
             name = ctx.author.display_name
         else:
-            player_id = database_operation.get_player_id(database.db_connection, str(member), ctx.guild.id)[0]
+            player_id = du.get_id_by_member(ctx, database.db_connection, member)
             name = member.display_name
         player_wins = database_operation.get_player_wins(database.db_connection, player_id)
         player_loses = database_operation.get_player_loses(database.db_connection, player_id)
@@ -28,10 +28,10 @@ class StatsCog(commands.Cog, name='Stats'):
         else:
             player_winrate = 100 * (player_wins / (player_wins + player_loses))
 
-        await code_message(ctx, f'{name}\n'
-                                f'Wins: {player_wins}'
-                                f'\nLoses: {player_loses}'
-                                f'\nWinrate: {player_winrate}%')
+        await du.code_message(ctx, f'{name}\n'
+                                   f'Wins: {player_wins}'
+                                   f'\nLoses: {player_loses}'
+                                   f'\nWinrate: {player_winrate}%')
 
     @commands.command(name='leaderboard',
                       help='Will list top 10 players by winrate, or give position of member on leaderboard')
@@ -43,8 +43,9 @@ class StatsCog(commands.Cog, name='Stats'):
         players = []
 
         for user in ctx.guild.members:
-            if database_operation.get_player_id(database.db_connection, str(user), ctx.guild.id) != 0:
-                player_data = database_operation.get_player_id(database.db_connection, str(user), ctx.guild.id)
+            if du.get_id_by_member(ctx, database.db_connection, user) != 0:
+                player_data = database_operation.get_player_info(database.db_connection,
+                                                                 du.get_id_by_member(ctx, database.db_connection, user))
                 if player_data[4] == 0:
                     winrate = 0
                 elif player_data[5] == 0:
@@ -59,8 +60,8 @@ class StatsCog(commands.Cog, name='Stats'):
         if members is not None:
             for player in players:
                 if player[0] == str(members):
-                    await code_message(ctx, f'{members.display_name} is rank #{players.index(player) + 1}, '
-                                            f'with a win-rate of {player[3]}%')
+                    await du.code_message(ctx, f'{members.display_name} is rank #{players.index(player) + 1}, '
+                                               f'with a win-rate of {player[3]}%')
             return
 
         text = "Leaderboard top 10 win-rate\n\n"
@@ -68,7 +69,7 @@ class StatsCog(commands.Cog, name='Stats'):
         for player in players[0:10]:
             text += (f'#{players.index(player) + 1}. {player[0]}: %.0f' % player[3]) + '%\n'
 
-        await code_message(ctx, text)
+        await du.code_message(ctx, text)
 
 
 def setup(bot):
