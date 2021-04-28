@@ -1,3 +1,6 @@
+import asyncio
+import math
+
 import discord
 import database
 import database_operation
@@ -31,6 +34,7 @@ class HistoryCog(commands.Cog, name='History'):
         - `<vs>` The user to limit the match history to only games with them
 
         """
+
         if not member:
             member = ctx.author
 
@@ -45,10 +49,12 @@ class HistoryCog(commands.Cog, name='History'):
             return
 
         text = ''
+        match_list = []
 
         # ♕
 
         for matches in match_history:
+            text = ''
             if vs:
                 if matches[2] != opponent_id and matches[3] != opponent_id:
                     continue
@@ -64,11 +70,61 @@ class HistoryCog(commands.Cog, name='History'):
             text += f'{du.get_member_by_player_id(ctx, database.db_connection, matches[3]).display_name}\t'
 
             text += f'{self.utc_to_est(matches[5]).strftime("%x %X")}\n'
+            match_list.append(text)
 
-        if text.len > 2000:
-            await du.code_message(ctx, 'Match history too long to send')
 
-        await du.code_message(ctx, text)
+
+        text = ''
+        pages = math.ceil(len(match_history)/10)
+        cur_page = pages-1
+        active = True
+
+        for i in range(cur_page*10, (cur_page*10) + 10):
+            if i < len(match_list):
+                text += str(match_list[i])
+
+        text += f'Page {cur_page+1} of {pages}\n'
+
+        message = await du.code_message(ctx, text)
+
+        await message.add_reaction('\U00002B05')
+        await message.add_reaction('\U000027A1')
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ['\U00002B05', '\U000027A1']
+
+        while active:
+            try:
+                page = '```\n'
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check)
+                if str(reaction.emoji) == '\U00002B05' and cur_page > 0:
+                    cur_page -= 1
+
+                    for i in range(cur_page*10, cur_page*10 + 10):
+                        page += match_list[i]
+
+                    page += f'Page {cur_page+1} of {pages}\n```'
+                    await message.edit(content=page)
+
+                    await message.remove_reaction(reaction, user)
+                    print('left')
+
+                elif str(reaction.emoji) == '\U000027A1' and cur_page < pages-1:
+                    cur_page += 1
+
+                    for i in range(cur_page*10, cur_page*10 + 10):
+                        if i < len(match_list):
+                            page += match_list[i]
+
+                    page += f'Page {cur_page+1} of {pages}\n```'
+                    await message.edit(content=page)
+
+                    await message.remove_reaction(reaction, user)
+                    print('right')
+                else:
+                    await message.remove_reaction(reaction, user)
+            except asyncio.TimeoutError:
+                active = False
 
     @commands.command(name='bet_history', help='Prints out a users bet history')
     @commands.guild_only()
