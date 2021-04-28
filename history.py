@@ -39,9 +39,9 @@ class HistoryCog(commands.Cog, name='History'):
             member = ctx.author
 
         if vs:
-            opponent_id = database_operation.get_player_id(database.db_connection, str(vs), ctx.guild.id)[0]
+            opponent_id = du.get_id_by_member(ctx, database.db_connection, vs)
 
-        player_id = database_operation.get_player_id(database.db_connection, str(member), ctx.guild.id)[0]
+        player_id = du.get_id_by_member(ctx, database.db_connection, member)
         match_history = database_operation.get_match_history_info_all(database.db_connection, player_id)
 
         if not match_history:
@@ -138,9 +138,9 @@ class HistoryCog(commands.Cog, name='History'):
             member = ctx.author
 
         if bet_target:
-            bet_target_id = database_operation.get_player_id(database.db_connection, str(bet_target), ctx.guild.id)[0]
+            bet_target_id = du.get_id_by_member(ctx, database.db_connection, bet_target)
 
-        better_id = database_operation.get_player_id(database.db_connection, str(member), ctx.guild.id)[0]
+        better_id = du.get_id_by_member(ctx, database.db_connection, member)
         bet_history = database_operation.get_bet_history_info_all(database.db_connection, better_id)
 
         if bet_history == 0 or bet_history == []:
