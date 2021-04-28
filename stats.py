@@ -7,12 +7,24 @@ from discord.ext import commands
 
 class StatsCog(commands.Cog, name='Stats'):
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.command(name='wins', aliases=['loses', 'winrate'], help='Prints a players wins')
     @commands.guild_only()
-    async def wins(self, ctx, member: discord.Member = None):
+    async def wins(self, ctx: commands.Context, member: discord.Member = None):
+        """Prints a users wins, loses, and winrate
+
+        Examples:
+            - `$wins @Sophia`
+            - `$wins`
+
+        **Arguments**
+
+        - `<ctx>` The context used to send confirmations.
+        - `<member>` The user who's data you want to print. If omitted will defaults to your own data.
+
+        """
 
         if member is None:
             player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
@@ -36,7 +48,19 @@ class StatsCog(commands.Cog, name='Stats'):
     @commands.command(name='leaderboard',
                       help='Will list top 10 players by winrate, or give position of member on leaderboard')
     @commands.guild_only()
-    async def leaderboard(self, ctx, *, members: discord.Member = None):
+    async def leaderboard(self, ctx: commands.Context, members: discord.Member = None):
+        """Lists top 10 players by winrate, or a specific users position on leaderboard
+
+        Examples:
+            - `$leaderboard @Sophia`
+            - `$leaderboard`
+
+        **Arguments**
+
+        - `<ctx>` The context used to send confirmations.
+        - `<members>` The member who's position on leaderboard you'd like to receive.
+
+        """
 
         player_info = database_operation.get_player_info_all_by_server(database.db_connection, ctx.guild.id)
 
