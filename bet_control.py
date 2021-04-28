@@ -7,13 +7,24 @@ from discord.ext import commands
 
 class BetCog(commands.Cog, name='Bets'):
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @commands.command(name='bet', help='Place a bet on a match, updates bets, if marbles is 0 it will delete your bet')
     @commands.guild_only()
     async def bet(self, ctx, winner: discord.Member, match_id: int, marbles: int):
+        """Places a bet on a active and not started match
 
+        Example:
+            - `$bet @Sophia 12 5`
+            - `$bet @Ness 12 0`
+
+        **Arguments**
+
+        - `<winner>` The player you think will win the match.
+        - `<match_id>` The id of the match you'd like to bet on
+        - `<marbles>` Amount of marbles you'd like to bet on the match.
+        """
         if marbles < 0:
             await du.code_message(ctx, 'Marbles cannot be negative')
             return
