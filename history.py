@@ -75,7 +75,7 @@ class HistoryCog(commands.Cog, name='History'):
 
 
         text = ''
-        pages = math.ceil(len(match_history)/10)
+        pages = math.ceil(len(match_list)/10)
         cur_page = pages-1
         active = True
 
@@ -148,8 +148,10 @@ class HistoryCog(commands.Cog, name='History'):
             return
 
         text = ''
+        bet_list = []
 
         for bet in bet_history:
+            text = ''
             if bet_target:
                 if bet[4] != bet_target_id:
                     continue
@@ -162,8 +164,63 @@ class HistoryCog(commands.Cog, name='History'):
                 text += 'Lost\t'
 
             text += f'{self.utc_to_est(bet[6]).strftime("%x %X")}\n'
+            bet_list.append(text)
 
-        await du.code_message(ctx, text)
+        text = ''
+        pages = math.ceil(len(bet_list))
+        cur_page = pages-1
+        active = True
+
+        for i in range(cur_page*10, (cur_page*10) + 10):
+            if i < len(bet_list):
+                text += str(bet_list[i])
+
+        if pages > 1:
+            text += f'Page {cur_page+1} of {pages}\n'
+        else:
+            active = False
+
+        message = await du.code_message(ctx, text)
+
+        if pages > 1:
+            await message.add_reaction('\U00002B05')
+            await message.add_reaction('\U000027A1')
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ['\U00002B05', '\U000027A1']
+
+        while active:
+            try:
+                page = '```\n'
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check)
+                if str(reaction.emoji) == '\U00002B05' and cur_page > 0:
+                    cur_page -= 1
+
+                    for i in range(cur_page*10, cur_page*10 + 10):
+                        page += bet_list[i]
+
+                    page += f'Page {cur_page+1} of {pages}\n```'
+                    await message.edit(content=page)
+
+                    await message.remove_reaction(reaction, user)
+                    print('left')
+
+                elif str(reaction.emoji) == '\U000027A1' and cur_page < pages-1:
+                    cur_page += 1
+
+                    for i in range(cur_page*10, cur_page*10 + 10):
+                        if i < len(bet_list):
+                            page += bet_list[i]
+
+                    page += f'Page {cur_page+1} of {pages}\n```'
+                    await message.edit(content=page)
+
+                    await message.remove_reaction(reaction, user)
+                    print('right')
+                else:
+                    await message.remove_reaction(reaction, user)
+            except asyncio.TimeoutError:
+                active = False
 
 
 def setup(bot):
