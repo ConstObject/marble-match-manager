@@ -6,27 +6,38 @@ from sqlite3 import Error
 
 logger = logging.getLogger(__name__)
 
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.DEBUG)
 
 file_handler = logging.FileHandler('db_op.log')
-formatter = logging.Formatter('[ %(asctime)s ] %(module)s : %(level)s : %(message)s')
+formatter = logging.Formatter('%(asctime)s : %(module)s : %(levelname)s : %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
+
+
+def replace_char_list(_old: str, _replacement: list,  _replace: str = '?') -> str:
+
+    for i in _replacement:
+        _old = _old.replace(_replace, str(i), 1)
+
+    return _old
 
 
 def create_user(connection: sqlite3.Connection, player_id: int, username: str, marbles: int, server_id: int,
                 wins: int = 0, loses: int = 0) -> int:
 
+    logger.debug(f'create_user: {player_id}, {username}, {marbles}, {server_id}, {wins}, {loses}')
+
+    query = "INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)"
+    query_param = [player_id, username, marbles, server_id, wins, loses]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'create_user: {player_id}, {username}, {marbles}, {server_id}, {wins}, {loses}')
-        cur.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)",
-                    [player_id, username, marbles, server_id, wins, loses])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
+
         return cur.lastrowid
     except Error as e:
         logger.error(f'There was an error inserting a user into users: {e}')
@@ -36,16 +47,19 @@ def create_user(connection: sqlite3.Connection, player_id: int, username: str, m
 def create_match(connection: sqlite3.Connection, match_id: int, amount: int, active: int,
                  participant1: int, participant2: int) -> int:
 
+    logger.debug(f'create_match: {match_id}, {amount}, {active}, {participant1}, {participant2}')
+
+    query = "INSERT INTO matches VALUES (?, ?, ?, ?, ?, ?)"
+    query_param = [match_id, amount, active, participant1, participant2, 0]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'create_match: {match_id}, {amount}, {active}, {participant1}, {participant2}')
-        cur.execute("INSERT INTO matches VALUES (?, ?, ?, ?, ?, ?)",
-                    [match_id, amount, active, participant1, participant2, 0])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
+
         return cur.lastrowid
     except Error as e:
         logger.error(f'There was an error inserting a match into matches: {e}')
@@ -55,18 +69,23 @@ def create_match(connection: sqlite3.Connection, match_id: int, amount: int, act
 def create_bet(connection: sqlite3.Connection, bet_id: int, amount: int, match_id: int, better_id: int,
                participant1: int) -> int:
 
+    logger.debug(f'create_bet: {bet_id}, {amount}, {match_id}, {better_id}, {participant1}')
+
+    query = "INSERT INTO bets VALUES (?, ?, ?, ?, ?)"
+    query_param = [bet_id, amount, match_id, better_id, participant1]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'create_bet: {bet_id}, {amount}, {match_id}, {better_id}, {participant1}')
-        cur.execute("INSERT INTO bets VALUES (?, ?, ?, ?, ?)", [bet_id, amount, match_id, better_id, participant1])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+
         subtract_marbles(connection, better_id, amount)
+
         logger.debug(f'subtract_marbles called')
 
-        logger.debug(f'lastrowid: {cur.lastrowid}')
         return cur.lastrowid
     except Error as e:
         logger.error(f'There was an error inserting a bet into bets: {e}')
@@ -74,18 +93,22 @@ def create_bet(connection: sqlite3.Connection, bet_id: int, amount: int, match_i
 
 
 def create_match_history(connection: sqlite3.Connection, match_id: int, amount: int,
-                         participant1: int, participant2: int, winner_id: int, time: datetime.datetime) -> int:
+                         participant1: int, participant2: int, winner_id: int,
+                         time: datetime.datetime = datetime.datetime.utcnow()) -> int:
+
+    logger.debug(f'create_match_history: {match_id}, {amount}, {participant1}, {participant2}, {winner_id}, {time}')
+
+    query = "INSERT INTO matches_history VALUES (?, ?, ?, ?, ?, ?)"
+    query_param = [match_id, amount, participant1, participant2, winner_id, time]
 
     try:
         cur = connection.cursor()
-
-        logger.debug(f'create_match_history: {match_id}, {amount}, {participant1}, {participant2}, {winner_id}, {time}')
-        cur.execute("INSERT INTO matches_history VALUES (?, ?, ?, ?, ?, ?)",
-                    [match_id, amount, participant1, participant2, winner_id, time])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
+
         return cur.lastrowid
     except Error as e:
         logger.error(f'There was an error inserting a match into match_history: {e}')
@@ -93,19 +116,22 @@ def create_match_history(connection: sqlite3.Connection, match_id: int, amount: 
 
 
 def create_bet_history(connection: sqlite3.Connection, bet_id: int, amount: int, match_id: int, better_id: int,
-                       participant1: int, winner_id: int, time: datetime.datetime) -> int:
+                       participant1: int, winner_id: int, time: datetime.datetime = datetime.datetime.utcnow()) -> int:
+
+    logger.debug(f'create_bet_history: '
+                 f'{bet_id}, {amount}, {match_id}, {better_id}, {participant1}, {winner_id}, {time}')
+
+    query = "INSERT INTO bets_history VALUES (?, ?, ?, ?, ?, ?, ?)"
+    query_param = [bet_id, amount, match_id, better_id, participant1, winner_id, time]
 
     try:
         cur = connection.cursor()
-
-        logger.debug(f'create_bet_history: '
-                     f'{bet_id}, {amount}, {match_id}, {better_id}, {participant1}, {winner_id}, {time}')
-        cur.execute("INSERT INTO bets_history VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    [bet_id, amount, match_id, better_id, participant1, winner_id, time])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
+
         return cur.lastrowid
     except Error as e:
         logger.error(f'There was an error inserting a bet into bet_history: {e}')
@@ -114,15 +140,19 @@ def create_bet_history(connection: sqlite3.Connection, bet_id: int, amount: int,
 
 def update_match_activity(connection: sqlite3.Connection, match_id: int, active: int = 1) -> bool:
 
+    logger.debug(f'update_match_activity: {match_id}, {active}')
+
+    query = "UPDATE matches SET active = ? WHERE id = ?"
+    query_param = [active, match_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'update_match_activity: {match_id}, {active}')
-        cur.execute("UPDATE matches SET active = ? WHERE id = ?", [active, match_id])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
+
         return True
     except Error as e:
         logger.error(f'There was an error updating activity in matches: {e}')
@@ -131,15 +161,19 @@ def update_match_activity(connection: sqlite3.Connection, match_id: int, active:
 
 def update_match_accepted(connection: sqlite3.Connection, match_id: int, accepted: int = 1) -> bool:
 
+    logger.debug(f'update_match_accepted: {match_id}, {accepted}')
+
+    query = "UPDATE matches SET accepted = ? WHERE id = ?"
+    query_param = [accepted, match_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'update_match_accepted: {match_id}, {accepted}')
-        cur.execute("UPDATE matches SET accepted = ? WHERE id = ?", [accepted, match_id])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
+
         return True
     except Error as e:
         logger.error(f'There was an error updating accepted in matches: {e}')
@@ -148,15 +182,19 @@ def update_match_accepted(connection: sqlite3.Connection, match_id: int, accepte
 
 def update_marble_count(connection: sqlite3.Connection, player_id: int, marbles: int) -> bool:
 
+    logger.debug(f'update_marble_count: {player_id}, {marbles}')
+
+    query = "UPDATE users SET marbles = ? WHERE id = ?"
+    query_param = [marbles, player_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'update_marble_count: {player_id}, {marbles}')
-        cur.execute("UPDATE users SET marbles = ? WHERE id = ?", [marbles, player_id])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
+
         return True
     except Error as e:
         logger.error(f'There was an error updating marbles in user: {e}')
@@ -165,15 +203,19 @@ def update_marble_count(connection: sqlite3.Connection, player_id: int, marbles:
 
 def update_player_wins(connection: sqlite3.Connection, player_id: int, wins: int) -> bool:
 
+    logger.debug(f'update_player_wins: {player_id}, {wins}')
+
+    query = "UPDATE users SET wins = ? WHERE id = ?"
+    query_param = [wins, player_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'update_player_wins: {player_id}, {wins}')
-        cur.execute("UPDATE users SET wins = ? WHERE id = ?", [wins, player_id])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
+
         return True
     except Error as e:
         logger.error(f'There was an error updating wins in user: {e}')
@@ -182,15 +224,19 @@ def update_player_wins(connection: sqlite3.Connection, player_id: int, wins: int
 
 def update_player_loses(connection: sqlite3.Connection, player_id: int, loses: int) -> bool:
 
+    logger.debug(f'update_player_loses: {player_id}, {loses}')
+
+    query = "UPDATE users SET loses = ? WHERE id = ?"
+    query_param = [loses, player_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'update_player_loses: {player_id}, {loses}')
-        cur.execute("UPDATE users SET loses = ? WHERE id = ?", [loses, player_id])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
+
         return True
     except Error as e:
         logger.error(f'There was an error updating loses in user: {e}')
@@ -199,15 +245,19 @@ def update_player_loses(connection: sqlite3.Connection, player_id: int, loses: i
 
 def update_bet(connection: sqlite3.Connection, bet_id: int, player_id: int, amount: int) -> bool:
 
+    logger.debug(f'update_bet: {bet_id}, {player_id}, {amount}')
+
+    query = "UPDATE bets SET amount=?, participant1=? WHERE id=?"
+    query_param = [amount, player_id, bet_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'update_bet: {bet_id}, {player_id}, {amount}')
-        cur.execute("UPDATE bets SET amount=?, participant1=? WHERE id=?", [amount, player_id, bet_id])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
+
         return True
     except Error as e:
         logger.error(f'There was an error updating bet in bets: {e}')
@@ -216,14 +266,17 @@ def update_bet(connection: sqlite3.Connection, bet_id: int, player_id: int, amou
 
 def get_match_info_by_id(connection: sqlite3.Connection, match_id: int):
 
+    logger.debug(f'get_match_info_by_id: {match_id}')
+
+    query = "SELECT * FROM matches WHERE id=?"
+    query_param = [match_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_match_info_by_id: {match_id}')
-        cur.execute("SELECT * FROM matches WHERE id=?", [match_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchone()
 
+        logger.debug(query, query_param)
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -237,15 +290,17 @@ def get_match_info_by_id(connection: sqlite3.Connection, match_id: int):
 
 
 def get_match_history_info(connection: sqlite3.Connection, match_id: int):
+    logger.debug(f'get_match_history_info: {match_id}')
+
+    query = "SELECT * FROM matches_history WHERE id=?"
+    query_param = [match_id]
 
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_match_history_info: {match_id}')
-        cur.execute("SELECT * FROM matches_history WHERE id=?", [match_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchone()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -260,14 +315,17 @@ def get_match_history_info(connection: sqlite3.Connection, match_id: int):
 
 def get_match_history_info_all(connection: sqlite3.Connection, player_id: int):
 
+    logger.debug(f'get_match_history_info_all: {player_id}')
+
+    query = "SELECT * FROM matches_history WHERE participant1=? OR participant2=?"
+    query_param = [player_id, player_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_match_history_info_all: {player_id}')
-        cur.execute("SELECT * FROM matches_history WHERE participant1=? OR participant2=?", [player_id, player_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchall()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -282,14 +340,17 @@ def get_match_history_info_all(connection: sqlite3.Connection, player_id: int):
 
 def get_player_id(connection: sqlite3.Connection, username: str, server_id: int) -> int:
 
+    logger.debug(f'get_player_id: {username}, {server_id}')
+
+    query = "SELECT * FROM users WHERE username=? AND server_id=?"
+    query_param = [username, server_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_player_id: {username}, {server_id}')
-        cur.execute("SELECT * FROM users WHERE username=? AND server_id=?", [username, server_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchone()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -304,14 +365,17 @@ def get_player_id(connection: sqlite3.Connection, username: str, server_id: int)
 
 def get_player_info(connection: sqlite3.Connection, player_id: int):
 
+    logger.debug(f'get_player_info: {player_id}')
+
+    query = "SELECT * FROM users WHERE id=?"
+    query_param = [player_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_player_info: {player_id}')
-        cur.execute("SELECT * FROM users WHERE id=?", [player_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchone()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -338,14 +402,17 @@ def get_player_loses(connection: sqlite3.Connection, player_id: int) -> int:
 
 def get_player_info_all_by_server(connection: sqlite3.Connection, server_id: int):
 
+    logger.debug(f'get_player_info_all_by_server: {server_id}')
+
+    query = "SELECT * FROM users WHERE server_id=?"
+    query_param = [server_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_player_info_all_by_server: {server_id}')
-        cur.execute("SELECT * FROM users WHERE server_id=?", [server_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchall()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -360,14 +427,17 @@ def get_player_info_all_by_server(connection: sqlite3.Connection, server_id: int
 
 def get_marble_count(connection: sqlite3.Connection, player_id: int) -> int:
 
+    logger.debug(f'get_marble_count: {player_id}')
+
+    query = "SELECT * FROM users WHERE id=?"
+    query_param = [player_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_marble_count: {player_id}')
-        cur.execute("SELECT * FROM users WHERE id=?", [player_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchone()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -382,14 +452,17 @@ def get_marble_count(connection: sqlite3.Connection, player_id: int) -> int:
 
 def get_bet_info(connection: sqlite3.Connection, bet_id: int):
 
+    logger.debug(f'get_bet_info: {bet_id}')
+
+    query = "SELECT * FROM bets WHERE id=?"
+    query_param = [bet_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_bet_info: {bet_id}')
-        cur.execute("SELECT * FROM bets WHERE id=?", [bet_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchone()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -404,14 +477,17 @@ def get_bet_info(connection: sqlite3.Connection, bet_id: int):
 
 def get_bet_info_all(connection: sqlite3.Connection, match_id: int):
 
+    logger.debug(f'get_bet_info_all: {match_id}')
+
+    query = "SELECT * FROM bets WHERE match_id=?"
+    query_param = [match_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_bet_info_all: {match_id}')
-        cur.execute("SELECT * FROM bets WHERE match_id=?", [match_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchall()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -426,14 +502,17 @@ def get_bet_info_all(connection: sqlite3.Connection, match_id: int):
 
 def get_bet_history_info(connection: sqlite3.Connection, bet_id: int):
 
+    logger.debug(f'get_bet_history_info: {bet_id}')
+
+    query = "SELECT * FROM bets_history WHERE id=?"
+    query_param = [bet_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_bet_history_info: {bet_id}')
-        cur.execute("SELECT * FROM bets_history WHERE id=?", [bet_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchone()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -448,14 +527,17 @@ def get_bet_history_info(connection: sqlite3.Connection, bet_id: int):
 
 def get_bet_history_info_all(connection: sqlite3.Connection, better_id: int):
 
+    logger.debug(f'get_bet_history_info_all: {better_id}')
+
+    query = "SELECT * FROM bets_history WHERE better_id=?"
+    query_param = [better_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'get_bet_history_info_all: {better_id}')
-        cur.execute("SELECT * FROM bets_history WHERE better_id=?", [better_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchall()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -470,14 +552,17 @@ def get_bet_history_info_all(connection: sqlite3.Connection, better_id: int):
 
 def find_match_by_player_id(connection: sqlite3.Connection, player_id: int):
 
+    logger.debug(f'find_match_by_player_id: {player_id}')
+
+    query = "SELECT * FROM matches WHERE participant1=? OR participant2=?"
+    query_param = [player_id, player_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'find_match_by_player_id: {player_id}')
-        cur.execute("SELECT * FROM matches WHERE participant1=? OR participant2=?", [player_id, player_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchone()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -492,14 +577,17 @@ def find_match_by_player_id(connection: sqlite3.Connection, player_id: int):
 
 def find_bet(connection: sqlite3.Connection, match_id: int, better_id: int):
 
+    logger.debug(f'find_bet: {match_id}, {better_id}')
+
+    query = "SELECT * FROM bets WHERE match_id=? AND better_id=?"
+    query_param = [match_id, better_id]
+
     try:
         cur = connection.cursor()
-
-        logger.debug(f'find_bet: {match_id}, {better_id}')
-        cur.execute("SELECT * FROM bets WHERE match_id=? AND better_id=?", [match_id, better_id])
-
+        cur.execute(query, query_param)
         results = cur.fetchone()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
@@ -512,37 +600,48 @@ def find_bet(connection: sqlite3.Connection, match_id: int, better_id: int):
         return 0
 
 
-def delete_match(connection: sqlite3.Connection, match_id: int):
+def delete_match(connection: sqlite3.Connection, match_id: int) -> bool:
+
+    logger.debug(f'delete_match: {match_id}')
+
+    query = "DELETE FROM matches WHERE id=?"
+    query_parm = [match_id]
 
     try:
         cur = connection.cursor()
-
-        logger.debug(f'delete_match: {match_id}')
-        cur.execute("DELETE FROM matches WHERE id=?", [match_id])
-
+        cur.execute(query, query_parm)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_parm))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'match deleted')
+
+        return True
     except Error as e:
         logger.error(f'There was an error deleting match from matches: {e}')
-        return 0
+        return False
 
 
-def delete_bet(connection: sqlite3.Connection, bet_id: int):
+def delete_bet(connection: sqlite3.Connection, bet_id: int) -> bool:
+
+    logger.debug(f'delete_bet: {bet_id}')
+
+    query = "DELETE FROM bets WHERE id=?"
+    query_param = [bet_id]
 
     try:
         cur = connection.cursor()
-
-        logger.debug(f'delete_bet: {bet_id}')
-        cur.execute("DELETE FROM bets WHERE id=?", [bet_id])
-
+        cur.execute(query, query_param)
         connection.commit()
 
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'bet deleted')
+
+        return True
     except Error as e:
         logger.error(f'There was an error deleting bet from bets: {e}')
+        return False
 
 
 def delete_bet_by_match_id(connection: sqlite3.Connection, match_id: int):
