@@ -2,11 +2,10 @@ import asyncio
 import math
 
 import discord
-import database
-import database_operation
+from database import database_operation, database
 import datetime
 import pytz
-import discord_utils as du
+from utils import discord_utils as du
 from discord.ext import commands
 
 

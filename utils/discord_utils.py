@@ -1,7 +1,6 @@
 import sqlite3
 import discord
-import database
-import database_operation
+from database import database_operation
 from discord.ext import commands
 
 

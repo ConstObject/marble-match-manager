@@ -1,7 +1,7 @@
 import discord
 import database
-import database_operation
-import discord_utils as du
+from database import database_operation, database
+from utils import discord_utils as du
 from discord.ext import commands
 
 

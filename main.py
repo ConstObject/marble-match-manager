@@ -1,12 +1,12 @@
 import os
 
 import discord
-import database
+import database.database as database
 
 from discord.ext import commands
 from dotenv import load_dotenv
 
-extensions_list = ['setup', 'match', 'bet_control', 'stats', 'economy', 'history']
+extensions_list = ['cogs.setup', 'cogs.match', 'cogs.bet_control', 'cogs.stats', 'cogs.economy', 'cogs.history']
 
 load_dotenv()
 if __debug__:
