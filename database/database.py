@@ -60,5 +60,5 @@ def create_tables(connection):
                     "FOREIGN KEY(winner_id) REFERENCES users(id))")
         connection.commit()
     except Error as e:
-        logger.debug(f'Failed to create tables: {e}')
+        logger.error(f'Failed to create tables: {e}')
         raise e
