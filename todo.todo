@@ -1,6 +1,6 @@
-- [x] Make database, with users, matches, bets
-- [x] Transactional commands
-- [x] Basic marble match functionality
-- [x] Side betting/predictions
-- [x] Leaderboards
-- [x] Marble match history
+- [x] Basic functionality
+- [ ] Assign nickname, for increased readability on outputs
+- [ ] Assign melee info for statistical use such as mains, slippi tag, etc
+- [ ] Pass slp files, to be parsed for statistical use and for auto win tracking
+- [ ] Allow use in dms not only server
+- [ ] Display statistical information for user/server

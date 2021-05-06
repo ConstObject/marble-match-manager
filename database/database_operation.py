@@ -2,6 +2,7 @@ import sqlite3
 import datetime
 import logging
 
+from typing import Union
 from sqlite3 import Error
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,8 @@ def replace_char_list(_old: str, _replacement: list,  _replace: str = '?') -> st
     return _old
 
 
-def create_user(connection: sqlite3.Connection, player_id: int, username: str, marbles: int, server_id: int,
+def create_user(connection: sqlite3.Connection, player_id: Union[int, None],
+                username: str, marbles: int, server_id: int,
                 wins: int = 0, loses: int = 0) -> int:
 
     logger.debug(f'create_user: {player_id}, {username}, {marbles}, {server_id}, {wins}, {loses}')
@@ -44,7 +46,7 @@ def create_user(connection: sqlite3.Connection, player_id: int, username: str, m
         return 0
 
 
-def create_match(connection: sqlite3.Connection, match_id: int, amount: int, active: int,
+def create_match(connection: sqlite3.Connection, match_id: Union[int, None], amount: int, active: int,
                  participant1: int, participant2: int) -> int:
 
     logger.debug(f'create_match: {match_id}, {amount}, {active}, {participant1}, {participant2}')
@@ -66,7 +68,7 @@ def create_match(connection: sqlite3.Connection, match_id: int, amount: int, act
         return 0
 
 
-def create_bet(connection: sqlite3.Connection, bet_id: int, amount: int, match_id: int, better_id: int,
+def create_bet(connection: sqlite3.Connection, bet_id: Union[int, None], amount: int, match_id: int, better_id: int,
                participant1: int) -> int:
 
     logger.debug(f'create_bet: {bet_id}, {amount}, {match_id}, {better_id}, {participant1}')
@@ -92,7 +94,7 @@ def create_bet(connection: sqlite3.Connection, bet_id: int, amount: int, match_i
         return 0
 
 
-def create_match_history(connection: sqlite3.Connection, match_id: int, amount: int,
+def create_match_history(connection: sqlite3.Connection, match_id: Union[int, None], amount: int,
                          participant1: int, participant2: int, winner_id: int,
                          time: datetime.datetime = datetime.datetime.utcnow()) -> int:
 
@@ -115,8 +117,9 @@ def create_match_history(connection: sqlite3.Connection, match_id: int, amount: 
         return 0
 
 
-def create_bet_history(connection: sqlite3.Connection, bet_id: int, amount: int, match_id: int, better_id: int,
-                       participant1: int, winner_id: int, time: datetime.datetime = datetime.datetime.utcnow()) -> int:
+def create_bet_history(connection: sqlite3.Connection, bet_id: Union[int, None], amount: int, match_id: int,
+                       better_id: int, participant1: int, winner_id: int,
+                       time: datetime.datetime = datetime.datetime.utcnow()) -> int:
 
     logger.debug(f'create_bet_history: '
                  f'{bet_id}, {amount}, {match_id}, {better_id}, {participant1}, {winner_id}, {time}')
