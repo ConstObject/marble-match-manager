@@ -1,31 +1,42 @@
 import os
+import configparser
 import logging
+import logging.config
+import sys
 
 import discord
 import database.database as database
 
 from discord.ext import commands
-from dotenv import load_dotenv
+
 
 logger = logging.getLogger('marble_match')
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 file_handler = logging.FileHandler('log.log')
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setLevel(logging.ERROR)
+logger.addHandler(stream_handler)
 formatter = logging.Formatter('%(asctime)s : %(module)s : %(levelname)s : %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-logger.debug('Ran')
+logger.error('Ran')
 
 extensions_list = ['setup', 'match', 'bet_control', 'stats', 'economy', 'history']
 
-load_dotenv()
+config = configparser.ConfigParser()
+config.read('marble_bot.ini')
+
 if __debug__:
-    logger.setLevel(logging.DEBUG)
-    token = os.getenv('DISCORD_DEV_TOKEN')
-    database.db_connection = database.create_connection('dev.db')
+    logger.setLevel(logging.ERROR)
+    token = config['DEVELOP']['discord_dev_token']
+    database.db_connection = database.create_connection(config['DEVELOP']['dev_database'])
 else:
-    token = os.getenv('DISCORD_TOKEN')
-    database.db_connection = database.create_connection('database.db')
+    token = config['DEFAULT']['discord_token']
+    database.db_connection = database.create_connection(config['DEFAULT']['database'])
+
+with open('marble_bot.ini', 'w') as config_file:
+    config.write(config_file)
 
 database.create_tables(database.db_connection)
 

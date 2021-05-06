@@ -5,7 +5,7 @@ import logging
 from typing import Union
 from sqlite3 import Error
 
-logger = logging.getLogger('marble_match.database_operation')
+logger = logging.getLogger('marble_match.' + __name__)
 
 
 def replace_char_list(_old: str, _replacement: list,  _replace: str = '?') -> str:
