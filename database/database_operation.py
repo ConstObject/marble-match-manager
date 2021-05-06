@@ -272,7 +272,7 @@ def get_match_info_by_id(connection: sqlite3.Connection, match_id: int):
         cur.execute(query, query_param)
         results = cur.fetchone()
 
-        logger.debug(query, query_param)
+        logger.debug(replace_char_list(query, query_param))
         logger.debug(f'lastrowid: {cur.lastrowid}')
         logger.debug(f'results: {results}')
 
