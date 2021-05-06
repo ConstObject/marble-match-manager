@@ -1,21 +1,36 @@
 import sqlite3
+import logging
 
 from sqlite3 import Error
 
 db_connection = None
 
+logger = logging.getLogger(__name__)
+
+logger.setLevel(logging.DEBUG)
+
+file_handler = logging.FileHandler('database.log')
+formatter = logging.Formatter('%(asctime)s : %(module)s : %(levelname)s : %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
 
 def create_connection(db_file):
+    logger.debug(f'create_connection: {db_file}')
     try:
         con = sqlite3.connect(db_file, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+        logger.debug(f'connection created: {con}')
         return con
     except Error as e:
-        print(e)
+        logger.error(f'Failed to create connection: {e}')
+        raise e
 
 
 def create_tables(connection):
+    logger.debug(f'create_tables: {connection}')
     try:
         cur = connection.cursor()
+        logger.debug(f'Created cursor: {cur}')
         cur.execute("CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
                     "username TEXT NOT NULL, marbles INTEGER NOT NULL, server_id INTEGER NOT NULL, "
                     "wins INTEGER NOT NULL, loses INTEGER NOT NULL)")
@@ -45,4 +60,5 @@ def create_tables(connection):
                     "FOREIGN KEY(winner_id) REFERENCES users(id))")
         connection.commit()
     except Error as e:
-        print(e)
+        logger.debug(f'Failed to create tables: {e}')
+        raise e
