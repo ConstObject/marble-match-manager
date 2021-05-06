@@ -4,4 +4,4 @@
 /database.db
 /dev.db
 /database_backup.db
-/db_op.log
+/*.log
