@@ -5,14 +5,7 @@ import logging
 from typing import Union
 from sqlite3 import Error
 
-logger = logging.getLogger(__name__)
-
-logger.setLevel(logging.DEBUG)
-
-file_handler = logging.FileHandler('db_op.log')
-formatter = logging.Formatter('%(asctime)s : %(module)s : %(levelname)s : %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+logger = logging.getLogger('marble_match.database_operation')
 
 
 def replace_char_list(_old: str, _replacement: list,  _replace: str = '?') -> str:
