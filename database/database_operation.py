@@ -387,7 +387,7 @@ def get_player_info(connection: sqlite3.Connection, player_id: int):
 def get_player_wins(connection: sqlite3.Connection, player_id: int) -> int:
 
     logger.debug(f'get_player_wins: {player_id}')
-    return get_player_info(connection, player_id)
+    return get_player_info(connection, player_id)[4]
 
 
 def get_player_loses(connection: sqlite3.Connection, player_id: int) -> int:
