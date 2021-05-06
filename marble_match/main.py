@@ -1,11 +1,10 @@
-import os
 import configparser
-import logging
 import logging.config
 import sys
 
 import discord
-import database.database as database
+import database.database_operation as do
+import database.database as db
 
 from discord.ext import commands
 
@@ -27,18 +26,9 @@ extensions_list = ['setup', 'match', 'bet_control', 'stats', 'economy', 'history
 config = configparser.ConfigParser()
 config.read('marble_bot.ini')
 
-if __debug__:
-    logger.setLevel(logging.ERROR)
-    token = config['DEVELOP']['discord_dev_token']
-    database.db_connection = database.create_connection(config['DEVELOP']['dev_database'])
-else:
-    token = config['DEFAULT']['discord_token']
-    database.db_connection = database.create_connection(config['DEFAULT']['database'])
+token = config['DEFAULT']['discord_token']
 
-with open('marble_bot.ini', 'w') as config_file:
-    config.write(config_file)
-
-database.create_tables(database.db_connection)
+db.create_tables(db.DbHandler.db_cnc)
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='$', intents=intents, description='Manages Marble Matches')

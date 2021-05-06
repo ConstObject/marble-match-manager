@@ -1,7 +1,7 @@
 import discord
-import database
-from database import database_operation, database
-from utils import discord_utils as du
+from marble_match.database.database import DbHandler
+from marble_match.database import database_operation
+from marble_match.utils import discord_utils as du
 from discord.ext import commands
 
 
@@ -32,8 +32,8 @@ class InitCog(commands.Cog, name='Initializations'):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        if not database_operation.get_player_id(database.db_connection, str(member), member.guild.id):
-            database_operation.create_user(database.db_connection, None, str(member), 10, member.guild.id)
+        if not database_operation.get_player_id(DbHandler.db_cnc, str(member), member.guild.id):
+            database_operation.create_user(DbHandler.db_cnc, None, str(member), 10, member.guild.id)
             print(f'Added {member.name} to database')
 
     @commands.command(name='init', help='Adds all server members to the database if they do not exist already')
@@ -52,8 +52,8 @@ class InitCog(commands.Cog, name='Initializations'):
         """
 
         for members in ctx.guild.members:
-            if not du.get_id_by_member(ctx, database.db_connection, members):
-                database_operation.create_user(database.db_connection, None, str(members), 10, ctx.guild.id)
+            if not du.get_id_by_member(ctx, DbHandler.db_cnc, members):
+                database_operation.create_user(DbHandler.db_cnc, None, str(members), 10, ctx.guild.id)
                 print(f'Added {members.name} to database')
         await du.code_message(ctx, 'Any members not added to the database have been added')
 

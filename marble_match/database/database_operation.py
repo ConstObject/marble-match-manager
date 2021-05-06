@@ -16,6 +16,17 @@ def replace_char_list(_old: str, _replacement: list,  _replace: str = '?') -> st
     return _old
 
 
+def create_con(path: str):
+    logger.debug(f'create_connection: {path}')
+    try:
+        con = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
+        logger.debug(f'connection created: {con}')
+        return con
+    except Error as e:
+        logger.error(f'Failed to create connection: {e}')
+        raise e
+
+
 def create_user(connection: sqlite3.Connection, player_id: Union[int, None],
                 username: str, marbles: int, server_id: int,
                 wins: int = 0, loses: int = 0) -> int:

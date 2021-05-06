@@ -2,10 +2,11 @@ import asyncio
 import math
 
 import discord
-from database import database_operation, database
+from marble_match.database.database import DbHandler
+from marble_match.database import database_operation
 import datetime
 import pytz
-from utils import discord_utils as du
+from marble_match.utils import discord_utils as du
 from discord.ext import commands
 
 
@@ -46,10 +47,10 @@ class HistoryCog(commands.Cog, name='History'):
             member = ctx.author
 
         if vs:
-            opponent_id = du.get_id_by_member(ctx, database.db_connection, vs)
+            opponent_id = du.get_id_by_member(ctx, DbHandler.db_cnc, vs)
 
-        player_id = du.get_id_by_member(ctx, database.db_connection, member)
-        match_history = database_operation.get_match_history_info_all(database.db_connection, player_id)
+        player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
+        match_history = database_operation.get_match_history_info_all(DbHandler.db_cnc, player_id)
 
         if not match_history:
             await du.code_message(ctx, 'No match history')
@@ -70,11 +71,11 @@ class HistoryCog(commands.Cog, name='History'):
 
             if matches[2] == matches[4]:
                 text += '♕'
-            text += f'{du.get_member_by_player_id(ctx, database.db_connection, matches[2]).display_name}\t vs \t'
+            text += f'{du.get_member_by_player_id(ctx, DbHandler.db_cnc, matches[2]).display_name}\t vs \t'
 
             if matches[3] == matches[4]:
                 text += '♕'
-            text += f'{du.get_member_by_player_id(ctx, database.db_connection, matches[3]).display_name}\t'
+            text += f'{du.get_member_by_player_id(ctx, DbHandler.db_cnc, matches[3]).display_name}\t'
 
             text += f'{self.utc_to_est(matches[5]).strftime("%x %X")}\n'
             match_list.append(text)
@@ -156,10 +157,10 @@ class HistoryCog(commands.Cog, name='History'):
             member = ctx.author
 
         if bet_target:
-            bet_target_id = du.get_id_by_member(ctx, database.db_connection, bet_target)
+            bet_target_id = du.get_id_by_member(ctx, DbHandler.db_cnc, bet_target)
 
-        better_id = du.get_id_by_member(ctx, database.db_connection, member)
-        bet_history = database_operation.get_bet_history_info_all(database.db_connection, better_id)
+        better_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
+        bet_history = database_operation.get_bet_history_info_all(DbHandler.db_cnc, better_id)
 
         if bet_history == 0 or bet_history == []:
             await du.code_message(ctx, 'No bet history')
@@ -174,7 +175,7 @@ class HistoryCog(commands.Cog, name='History'):
                 if bet[4] != bet_target_id:
                     continue
             text += f'{bet[1]}\t'
-            text += f'{du.get_member_by_player_id(ctx, database.db_connection, bet[4]).display_name}\t'
+            text += f'{du.get_member_by_player_id(ctx, DbHandler.db_cnc, bet[4]).display_name}\t'
 
             if bet[4] == bet[5]:
                 text += 'Won\t'

@@ -1,7 +1,7 @@
 import discord
-import database
-from database import database_operation, database
-from utils import discord_utils as du
+from marble_match.database.database import DbHandler
+from marble_match.database import database_operation
+from marble_match.utils import discord_utils as du
 from discord.ext import commands
 
 
@@ -27,13 +27,13 @@ class StatsCog(commands.Cog, name='Stats'):
         """
 
         if member is None:
-            player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
+            player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
             name = ctx.author.display_name
         else:
-            player_id = du.get_id_by_member(ctx, database.db_connection, member)
+            player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
             name = member.display_name
-        player_wins = database_operation.get_player_wins(database.db_connection, player_id)
-        player_loses = database_operation.get_player_loses(database.db_connection, player_id)
+        player_wins = database_operation.get_player_wins(DbHandler.db_cnc, player_id)
+        player_loses = database_operation.get_player_loses(DbHandler.db_cnc, player_id)
 
         if player_wins == 0:
             player_winrate = 0
@@ -62,14 +62,15 @@ class StatsCog(commands.Cog, name='Stats'):
 
         """
 
-        player_info = database_operation.get_player_info_all_by_server(database.db_connection, ctx.guild.id)
+        player_info = database_operation.get_player_info_all_by_server(DbHandler.db_cnc, ctx.guild.id)
 
         players = []
 
         for user in ctx.guild.members:
-            if du.get_id_by_member(ctx, database.db_connection, user) != 0:
-                player_data = database_operation.get_player_info(database.db_connection,
-                                                                 du.get_id_by_member(ctx, database.db_connection, user))
+            if du.get_id_by_member(ctx, DbHandler.db_cnc, user) != 0:
+                player_data = database_operation.get_player_info(DbHandler.db_cnc,
+                                                                 du.get_id_by_member(
+                                                                     ctx, DbHandler.db_cnc, user))
                 if player_data[4] == 0:
                     winrate = 0
                 elif player_data[5] == 0:

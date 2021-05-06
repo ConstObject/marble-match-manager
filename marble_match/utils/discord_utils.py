@@ -1,7 +1,7 @@
 import sqlite3
 import discord
 import logging
-from database import database_operation
+from marble_match.database import database_operation
 from discord.ext import commands
 
 logger = logging.getLogger('marble_match.discord_utils')

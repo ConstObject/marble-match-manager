@@ -1,6 +1,7 @@
 import discord
-from database import database_operation, database
-from utils import discord_utils as du
+from marble_match.database.database import DbHandler
+from marble_match.database import database_operation
+from marble_match.utils import discord_utils as du
 from discord.ext import commands
 import numpy as np
 
@@ -35,8 +36,8 @@ class EconCog(commands.Cog, name='Marbles'):
             await du.code_message(ctx, 'You cannot set a users marbles to any negative number')
             return
 
-        database_operation.update_marble_count(database.db_connection,
-                                               du.get_id_by_member(ctx, database.db_connection, member), marbles)
+        database_operation.update_marble_count(DbHandler.db_cnc,
+                                               du.get_id_by_member(ctx, DbHandler.db_cnc, member), marbles)
         await du.code_message(ctx, f'Set {member.display_name}\'s marbles to {str(marbles)}')
 
     @commands.command(name='add_marbles', help='Will add to the users marble bank')
@@ -61,11 +62,11 @@ class EconCog(commands.Cog, name='Marbles'):
             await du.code_message(ctx, 'You cannot add non positive numbers to a users marble bank')
             return
 
-        player_id = du.get_id_by_member(ctx, database.db_connection, member)
+        player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
 
-        database_operation.add_marbles(database.db_connection, player_id, marbles)
+        database_operation.add_marbles(DbHandler.db_cnc, player_id, marbles)
 
-        balance = database_operation.get_marble_count(database.db_connection, player_id)
+        balance = database_operation.get_marble_count(DbHandler.db_cnc, player_id)
         await du.code_message(ctx, f'{ctx.author.display_name} has added {marbles} to {member.display_name}\'s bank.'
                                    f'\nTheir new balance is {balance}!')
 
@@ -91,12 +92,13 @@ class EconCog(commands.Cog, name='Marbles'):
             await du.code_message(ctx, 'You cannot subtract non positive numbers to a users marble bank')
             return
 
-        player_id = du.get_id_by_member(ctx, database.db_connection, member)
+        player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
 
-        database_operation.subtract_marbles(database.db_connection, player_id, marbles)
+        database_operation.subtract_marbles(DbHandler.db_cnc, player_id, marbles)
 
-        balance = database_operation.get_marble_count(database.db_connection, player_id)
-        await du.code_message(ctx, f'{ctx.author.display_name} has removed {marbles} from {member.display_name}\'s bank.'
+        balance = database_operation.get_marble_count(DbHandler.db_cnc, player_id)
+        await du.code_message(ctx, f'{ctx.author.display_name} has removed {marbles} from '
+                                   f'{member.display_name}\'s bank.'
                                    f'\nTheir new balance is {balance}!')
 
     @commands.command(name='marbles', help='Prints their marble count')
@@ -116,14 +118,16 @@ class EconCog(commands.Cog, name='Marbles'):
         """
 
         if member is None:
-            player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
+            player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
             await du.code_message(ctx,
-                                  f'You have {database_operation.get_marble_count(database.db_connection, player_id)}'
-                                  f' marbles.')
+                                  f'You have '
+                                  f'{database_operation.get_marble_count(DbHandler.db_cnc, player_id)} '
+                                  f'marbles.')
         else:
-            player_id = du.get_id_by_member(ctx, database.db_connection, member)
+            player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
             await du.code_message(ctx,
-                                  f'They have {database_operation.get_marble_count(database.db_connection, player_id)} '
+                                  f'They have '
+                                  f'{database_operation.get_marble_count(DbHandler.db_cnc, player_id)} '
                                   f'marbles.')
 
     @commands.command(name='transfer', help='Transfers marbles from your bank to theirs')
@@ -151,17 +155,17 @@ class EconCog(commands.Cog, name='Marbles'):
             await du.code_message(ctx, 'You cannot send non positive amounts of marbles')
             return
 
-        player_id1 = du.get_id_by_member(ctx, database.db_connection, ctx.author)
-        player_id2 = du.get_id_by_member(ctx, database.db_connection, member)
-        player1_marbles = database_operation.get_marble_count(database.db_connection, player_id1)
+        player_id1 = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
+        player_id2 = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
+        player1_marbles = database_operation.get_marble_count(DbHandler.db_cnc, player_id1)
 
         if player1_marbles < marbles:
             await du.code_message(ctx, 'You don\'t have enough marbles for this transaction')
             return
 
-        player2_marbles = database_operation.get_marble_count(database.db_connection, player_id2)
+        player2_marbles = database_operation.get_marble_count(DbHandler.db_cnc, player_id2)
 
-        database_operation.transfer_marbles(database.db_connection, player_id1, player_id2, marbles)
+        database_operation.transfer_marbles(DbHandler.db_cnc, player_id1, player_id2, marbles)
 
         await du.code_message(ctx, f'Marbles transferred! Your new balances are:'
                                    f'\n{ctx.author.display_name}: {str(player1_marbles - marbles)} marbles'
@@ -181,7 +185,7 @@ class EconCog(commands.Cog, name='Marbles'):
 
         """
 
-        players = database_operation.get_player_info_all_by_server(database.db_connection, ctx.guild.id)
+        players = database_operation.get_player_info_all_by_server(DbHandler.db_cnc, ctx.guild.id)
         marbles = 0
         for user in players:
             marbles += user[2]
@@ -205,7 +209,7 @@ class EconCog(commands.Cog, name='Marbles'):
         count = 0
         sum_marbles = 0
         marbles = []
-        players = database_operation.get_player_info_all_by_server(database.db_connection, ctx.guild.id)
+        players = database_operation.get_player_info_all_by_server(DbHandler.db_cnc, ctx.guild.id)
         for user in players:
             sum_marbles += user[2]
             marbles.append(float(user[2]))

@@ -3,8 +3,8 @@ import discord
 import logging
 
 from discord.ext import commands
-from dataclasses import dataclass, field
-from database import database, database_operation
+from dataclasses import dataclass
+from marble_match.database import database, database_operation
 
 logger = logging.getLogger('marble_match.account')
 
@@ -31,7 +31,7 @@ class Account:
             amount = 0
 
         # Update marble count in database, check if write was successful then update Account info
-        if database_operation.update_marble_count(database.db_connection, self.id, amount):
+        if database_operation.update_marble_count(database.DbHandler.db_cnc, self.id, amount):
             self._marbles = amount
             logger.debug('Updated marbles')
         else:
@@ -50,7 +50,7 @@ class Account:
             amount = 0
 
         # Update wins in database, check if write was successful then update Account info
-        if database_operation.update_player_wins(database.db_connection, self.id, amount):
+        if database_operation.update_player_wins(database.DbHandler.db_cnc, self.id, amount):
             self._wins = amount
             logger.debug('Updated wins')
         else:
@@ -69,7 +69,7 @@ class Account:
             amount = 0
 
         # Update loses in database, check if write was successful then update Account info
-        if database_operation.update_player_loses(database.db_connection, self.id, amount):
+        if database_operation.update_player_loses(database.DbHandler.db_cnc, self.id, amount):
             self._loses = amount
             logger.debug('Updated loses')
         else:

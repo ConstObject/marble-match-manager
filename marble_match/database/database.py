@@ -1,9 +1,8 @@
 import sqlite3
 import logging
+import configparser
 
 from sqlite3 import Error
-
-db_connection = None
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +23,20 @@ def create_connection(db_file):
     except Error as e:
         logger.error(f'Failed to create connection: {e}')
         raise e
+
+
+def create_connection_wraper_hack():
+    config = configparser.ConfigParser()
+    config.read('marble_bot.ini')
+    return create_connection(config['DEFAULT']['database'])
+
+
+# Boilerplate class to not have python yeet my global static variable
+class DbHandler:
+    db_cnc: sqlite3.Connection = create_connection_wraper_hack()
+
+    def __init__(self):
+        pass
 
 
 def create_tables(connection):

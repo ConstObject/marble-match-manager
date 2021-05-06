@@ -1,6 +1,8 @@
 import discord
-from database import database_operation, database
-from utils import discord_utils as du
+
+from marble_match.database.database import DbHandler
+from marble_match.database import database_operation
+from marble_match.utils import discord_utils as du
 from discord.ext import commands
 
 
@@ -28,14 +30,14 @@ class BetCog(commands.Cog, name='Bets'):
             await du.code_message(ctx, 'Marbles cannot be negative')
             return
 
-        player_id = du.get_id_by_member(ctx, database.db_connection, winner)
-        better_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
+        player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, winner)
+        better_id = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
 
-        if database_operation.get_marble_count(database.db_connection, player_id) < marbles:
+        if database_operation.get_marble_count(DbHandler.db_cnc, player_id) < marbles:
             await du.code_message(ctx, 'You do not have enough marbles for this bet')
             return
 
-        match_info = database_operation.get_match_info_by_id(database.db_connection, match_id)
+        match_info = database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
 
         if match_info == 0:
             await du.code_message(ctx, 'Invalid match id')
@@ -57,26 +59,26 @@ class BetCog(commands.Cog, name='Bets'):
                 await du.code_message(ctx, 'Player is not in this match')
                 return
 
-        bet_id = database_operation.find_bet(database.db_connection, match_id, better_id)
-        bet_info = database_operation.get_bet_info(database.db_connection, bet_id)
+        bet_id = database_operation.find_bet(DbHandler.db_cnc, match_id, better_id)
+        bet_info = database_operation.get_bet_info(DbHandler.db_cnc, bet_id)
 
         if bet_id != 0:
             if marbles == 0:
-                database_operation.delete_bet(database.db_connection, bet_id)
-                database_operation.add_marbles(database.db_connection, better_id, bet_info[1])
+                database_operation.delete_bet(DbHandler.db_cnc, bet_id)
+                database_operation.add_marbles(DbHandler.db_cnc, better_id, bet_info[1])
                 await du.code_message(ctx, 'Bet deleted')
 
-            bet_info = database_operation.get_bet_info(database.db_connection, bet_id)
-            database_operation.add_marbles(database.db_connection, better_id, bet_info[1])
-            database_operation.subtract_marbles(database.db_connection, better_id, marbles)
-            database_operation.update_bet(database.db_connection, bet_id, player_id, marbles)
+            bet_info = database_operation.get_bet_info(DbHandler.db_cnc, bet_id)
+            database_operation.add_marbles(DbHandler.db_cnc, better_id, bet_info[1])
+            database_operation.subtract_marbles(DbHandler.db_cnc, better_id, marbles)
+            database_operation.update_bet(DbHandler.db_cnc, bet_id, player_id, marbles)
             await du.code_message(ctx, 'Bet updated')
             return
 
         if marbles < 1:
             await du.code_message(ctx, 'Cannot be zero')
 
-        database_operation.create_bet(database.db_connection, None, marbles, match_id, better_id, player_id)
+        database_operation.create_bet(DbHandler.db_cnc, None, marbles, match_id, better_id, player_id)
 
         await du.code_message(ctx, 'Bet submitted')
 
