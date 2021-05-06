@@ -81,8 +81,18 @@ class MatchCog(commands.Cog, name='Matches'):
                                        f' they have {recipient.marbles}', 3)
             return
 
+        # Creates the match with the players
         match_id = database_operation.create_match(database.db_connection,
                                                    None, marbles, 0, challenger.id, recipient.id)
+        logger.debug(f'match_id: {match_id}')
+        # Checks if match_id is valid, to verify match was created
+        if not match_id:
+            logger.debug('match_id is zero, failed to create match')
+            await du.code_message(ctx, 'Failed to create match', 3)
+            return
+
+        # Subtracts marbles from challenger
+        challenger.marbles -= marbles
 
         await du.code_message(ctx, f'{ctx.author.display_name} challenged {member.display_name} '
                                    f'to a marble match for {marbles} '
@@ -111,10 +121,10 @@ class MatchCog(commands.Cog, name='Matches'):
 
         """
         logger.debug(f'accept: {ctx}, {ctx.author}')
-        # Get player_id from database for user, then get a match_id
-        player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
-        match_id = database_operation.find_match_by_player_id(database.db_connection, player_id)
-        logger.debug(f'player_id: {player_id}, match_id: {match_id}')
+        # Get player from database for user, then get a match_id
+        player = acc.get_account(ctx, database.db_connection, ctx.author)  # du.get_id_by_member(ctx, database.db_connection, ctx.author)
+        match_id = database_operation.find_match_by_player_id(database.db_connection, player.id)
+        logger.debug(f'player: {player}, match_id: {match_id}')
 
         # Checks if match id is 0/None, gives user message and returns to exit
         if not match_id:
@@ -122,11 +132,30 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, 'You don\'t have a match to accept')
             return
 
+        # Get match_info to get marble amount
+        match_info = database_operation.get_match_info_by_id(database.db_connection, match_id)
+
+        # Checks if match_info is valid
+        if not match_info:
+            logger.debug('match_info is zero')
+            await du.code_message(ctx, 'Unable to get match info')
+            return
+
+        # Check if user accepting is participant2
+        if player.id == match_info[3]:
+            logger.debug(f'{ctx.author} tried to accept a match they aren\'t the recipient of')
+            await du.code_message(ctx, 'You\'re not the recipient of a match')
+            return
+
         # Updates match accepted flag in database, checks if write was successful and gives message
         if not database_operation.update_match_accepted(database.db_connection, match_id):
             logger.debug(f'Unable to update match accepted flag')
             await du.code_message(ctx, 'Was unable to accept match', 3)
             return
+
+        # Subtracts marbles from user
+        player.marbles -= match_info[1]
+
         await du.code_message(ctx, f'Match {match_id} accepted, now open for betting.'
                                    f'\nType \'$start\' to close the betting and start the match')
 
@@ -203,11 +232,11 @@ class MatchCog(commands.Cog, name='Matches'):
             loser = acc.get_account_from_db(ctx, database.db_connection, match_info[3])
         logger.debug(f'loser: {loser}')
 
-        # Transfers marbles from loser to winner
-        database_operation.transfer_marbles(database.db_connection, loser.id, winner.id, match_info[1])
+        # Add marbles to winner
+        winner.marbles += match_info[1]*2
         # Adds win/lose to winner/loser
-        database_operation.add_player_win(database.db_connection, winner.id, 1)
-        database_operation.add_player_loses(database.db_connection, loser.id, 1)
+        winner.wins += 1
+        loser.loses += 1
         # Creates a entry of match in match_history table
         database_operation.create_match_history(database.db_connection, match_id, match_info[1], match_info[3],
                                                 match_info[4], winner.id, datetime.datetime.utcnow())
@@ -275,8 +304,46 @@ class MatchCog(commands.Cog, name='Matches'):
         match_id = database_operation.find_match_by_player_id(database.db_connection, player_id)
         logger.debug(f'player_id: {player_id}, match_id: {match_id}')
 
-        # Deletes the match and all the bets on the match by id
-        database_operation.delete_match(database.db_connection, match_id)
+        # Gets match_info to return marbles back to participants
+        match_info = database_operation.get_match_info_by_id(database.db_connection, match_id)
+        logger.debug(f'match_info: {match_info}')
+
+        player2_refund = False
+
+        # Checks if match is accepted by participant2
+        if match_info[5]:  # Match is accepted
+            # Gets participant2's Account to change marbles
+            player2 = acc.get_account_from_db(ctx, database.db_connection, match_info[4])
+            logger.debug(f'player2: {player2}')
+            # Checks if player2 is 0, then returns if 0
+            if not player2:
+                logger.debug(f'Unable to get participant2 Account')
+                await du.code_message(ctx, 'Unable to get participant2\'s account')
+                return
+            # Sets flag for player2 to be refunded amount to true
+            player2_refund = True
+            logger.debug(f'player2_refund: {player2_refund}')
+
+        # Get participant1's Account to refund player for match amount
+        player1 = acc.get_account_from_db(ctx, database.db_connection, int(match_info[3]))
+        # Check if player1 is 0, then returns if 0
+        if not player1:
+            logger.debug('Unable to get participant1 Account')
+            await du.code_message(ctx, 'Unable to get participant1\'s account')
+            return
+
+        # Deletes the match and all the bets on the match by id, checks if write was successful and returns message
+        if not database_operation.delete_match(database.db_connection, match_id):
+            logger.debug('Unable to delete match')
+            await du.code_message(ctx, 'Unable to delete match', 3)
+            return
+
+        # Refunds players marbles, checks if player2 flag is true to refund player2
+        player1.marbles += match_info[1]
+        if player2_refund:
+            player2.marbles += match_info[1]
+
+
         database_operation.delete_bet_by_match_id(database.db_connection, match_id)
         await du.code_message(ctx, f'Closed match {match_id}.')
 
