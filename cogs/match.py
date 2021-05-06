@@ -231,21 +231,26 @@ class MatchCog(commands.Cog, name='Matches'):
         - `<ctx>` The context used to send confirmations.
 
         """
+        logger.debug(f'current: {ctx}, {ctx.author}')
 
+        # Gets player_id from ctx.author and gets match_id for player
         player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
         match_id = database_operation.find_match_by_player_id(database.db_connection, player_id)
+        logger.debug(f'player_id: {player_id}, match_id: {match_id}')
 
-        if match_id == 0:
+        # Checks if match_id is an actual id
+        if not match_id:
+            logger.debug('match_id is zero')
             await du.code_message(ctx, 'No current match')
             return
-
+        # Gets match_info to display back to the user
         match_info = database_operation.get_match_info_by_id(database.db_connection, match_id)
+        logger.debug(f'match_info: {match_info}')
 
+        # Get Accounts of both participants
         player_info1 = database_operation.get_player_info(database.db_connection, match_info[3])
         player_info2 = database_operation.get_player_info(database.db_connection, match_info[4])
-
-        print(player_info1)
-        print(player_info2)
+        logger.debug(f'player_info1: {player_info1}, player_info2: {player_info2}')
 
         await du.code_message(ctx, f'Match between {player_info1[1]} and {player_info2[1]} for {match_info[1]} marbles'
                                    f'\nMatch ID: {match_id}')
@@ -263,10 +268,14 @@ class MatchCog(commands.Cog, name='Matches'):
         - `<ctx>` The context used to send confirmations
 
         """
+        logger.debug(f'close: {ctx}, {ctx.author}')
 
+        # Gets player_id and match_id, to close the current match
         player_id = du.get_id_by_member(ctx, database.db_connection, ctx.author)
         match_id = database_operation.find_match_by_player_id(database.db_connection, player_id)
+        logger.debug(f'player_id: {player_id}, match_id: {match_id}')
 
+        # Deletes the match and all the bets on the match by id
         database_operation.delete_match(database.db_connection, match_id)
         database_operation.delete_bet_by_match_id(database.db_connection, match_id)
         await du.code_message(ctx, f'Closed match {match_id}.')
