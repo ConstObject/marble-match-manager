@@ -4,14 +4,7 @@ import logging
 from database import database_operation
 from discord.ext import commands
 
-logger = logging.getLogger(__name__)
-
-logger.setLevel(logging.DEBUG)
-
-file_handler = logging.FileHandler('discord_utils.log')
-formatter = logging.Formatter('%(asctime)s : %(module)s : %(levelname)s : %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+logger = logging.getLogger('marble_match.discord_utils')
 
 
 async def code_message(ctx: commands.Context, text: str, color: int = 0):
