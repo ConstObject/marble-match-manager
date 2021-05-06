@@ -1,7 +1,5 @@
 /.env
 /.idea
 /venv/
-/database.db
-/dev.db
-/database_backup.db
+/*.db
 /*.log
