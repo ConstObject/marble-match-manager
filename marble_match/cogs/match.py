@@ -9,7 +9,7 @@ from database.database_setup import DbHandler
 import utils.discord_utils as du
 import utils.account as acc
 import utils.matches as ma
-import utils.exception as error
+import utils.exception as exception
 
 logger = logging.getLogger('marble_match.match')
 
@@ -154,7 +154,7 @@ class MatchCog(commands.Cog, name='Matches'):
         # Updates match accepted flag in database, checks if write was successful and gives message
         try:
             match.accepted = True  # database_operation.update_match_accepted(DbHandler.db_cnc, match_id):
-        except error as e:
+        except exception.Error as e:
             logger.debug(f'Unable to update match accepted flag')
             await du.code_message(ctx, 'Was unable to accept match', 3)
             return
@@ -194,7 +194,7 @@ class MatchCog(commands.Cog, name='Matches'):
             # Get match from match_id
             match = ma.get_match(ctx, match_id)
             logger.debug(f'match: {match}')
-        except error as e:
+        except exception.Error as e:
             logger.error(f'Unable to get match from match_id')
             await du.code_message(ctx, 'Was unable to get match please try again later', 3)
             return
@@ -208,7 +208,7 @@ class MatchCog(commands.Cog, name='Matches'):
         # Updates match accepted flag in database, checks if write was successful and gives message
         try:  # if not database_operation.update_match_activity(DbHandler.db_cnc, match_id):
             match.active = True
-        except error as e:
+        except exception.Error as e:
             logger.debug(f'Unable to update match accepted flag')
             await du.code_message(ctx, 'Was unable to accept match', 3)
             return
@@ -247,7 +247,7 @@ class MatchCog(commands.Cog, name='Matches'):
         try:
             match = ma.get_match(ctx, match_id)  # database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
             logger.debug(f'match: {match}')
-        except error as e:
+        except exception.Error as e:
             logger.error(f'Unable to get match: {e}')
             await du.code_message(ctx, 'Unable to process match', 3)
             return
@@ -268,7 +268,7 @@ class MatchCog(commands.Cog, name='Matches'):
             # Adds win/lose to winner/loser
             winner.wins += 1
             loser.loses += 1
-        except error as e:
+        except exception.Error as e:
             logger.error(f'Unable to update player stats: {e}')
             await du.code_message(ctx, 'Was unable to update player stats please try again', 3)
             return
@@ -285,7 +285,7 @@ class MatchCog(commands.Cog, name='Matches'):
             logger.debug('Updated match info')
             match.create_history()
             logger.debug('Created match_history for match')
-        except error as e:
+        except exception.Error as e:
             logger.error(f'Unable to create matches_history entry')
             await du.code_message(ctx, f'Failed to add match to history or to delete from matches: {match.id}', 3)
 
