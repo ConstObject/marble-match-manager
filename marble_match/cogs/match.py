@@ -1,11 +1,13 @@
-import discord
 import datetime
 import logging
 
-from marble_match.utils import discord_utils as du, account as acc
+import discord
 from discord.ext import commands
-from marble_match.database.database import DbHandler
-from marble_match.database import database_operation
+
+import database.database_operation as database_operation
+from database.database_setup import DbHandler
+import utils.discord_utils as du
+import utils.account as acc
 
 logger = logging.getLogger('marble_match.match')
 

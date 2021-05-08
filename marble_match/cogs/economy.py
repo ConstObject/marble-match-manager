@@ -1,9 +1,10 @@
 import discord
-from marble_match.database.database import DbHandler
-from marble_match.database import database_operation
-from marble_match.utils import discord_utils as du
 from discord.ext import commands
 import numpy as np
+
+import database.database_operation as database_operation
+from database.database_setup import DbHandler
+import utils.discord_utils as du
 
 
 class EconCog(commands.Cog, name='Marbles'):
@@ -212,7 +213,7 @@ class EconCog(commands.Cog, name='Marbles'):
         players = database_operation.get_player_info_all_by_server(DbHandler.db_cnc, ctx.guild.id)
         for user in players:
             sum_marbles += user[2]
-            marbles.append(float(user[2]))
+            marbles.append(np.float64(user[2]))
             count += 1
 
         # TODO: Add other calculations for server economy
@@ -230,7 +231,7 @@ class EconCog(commands.Cog, name='Marbles'):
 
         await du.code_message(ctx, f'There are currently {sum_marbles} marbles in circulation\n'
                                    f'The current mean marble count is {int(sum_marbles / count)}\n'
-                                   f'Inequality index is {gini}\n')
+                                   f'Inequality index is {gini:.4f}\n')
 
 
 def setup(bot):

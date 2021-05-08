@@ -1,9 +1,9 @@
 import discord
-
-from marble_match.database.database import DbHandler
-from marble_match.database import database_operation
-from marble_match.utils import discord_utils as du
 from discord.ext import commands
+
+import database.database_operation as database_operation
+from database.database_setup import DbHandler
+import utils.discord_utils as du
 
 
 class BetCog(commands.Cog, name='Bets'):

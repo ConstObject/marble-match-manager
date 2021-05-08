@@ -1,7 +1,7 @@
 import discord
-from marble_match.database.database import DbHandler
-from marble_match.database import database_operation
-from marble_match.utils import discord_utils as du
+import database.database_operation as database_operation
+import utils.discord_utils as du
+from database.database_setup import DbHandler
 from discord.ext import commands
 
 

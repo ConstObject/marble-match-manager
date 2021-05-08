@@ -1,10 +1,10 @@
 import configparser
 import logging.config
+import os
 import sys
 
 import discord
-import database.database_operation as do
-import database.database as db
+import database.database_setup as db
 
 from discord.ext import commands
 

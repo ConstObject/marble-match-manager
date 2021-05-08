@@ -1,8 +1,11 @@
 import discord
-from marble_match.database.database import DbHandler
-from marble_match.database import database_operation
-from marble_match.utils import discord_utils as du
 from discord.ext import commands
+
+import database.database_operation as database_operation
+from database.database_setup import DbHandler
+import utils.account as acc
+import utils.discord_utils as du
+# import utils.matches as ma
 
 
 def has_database_permission():
@@ -35,6 +38,16 @@ class InitCog(commands.Cog, name='Initializations'):
         if not database_operation.get_player_id(DbHandler.db_cnc, str(member), member.guild.id):
             database_operation.create_user(DbHandler.db_cnc, None, str(member), 10, member.guild.id)
             print(f'Added {member.name} to database')
+
+    @commands.command(name='testing')
+    @commands.guild_only()
+    async def testing(self, ctx: commands.Context, member: discord.Member):
+        account1 = acc.get_account(ctx, DbHandler.db_cnc, member)
+        account2 = acc.get_account(ctx, DbHandler.db_cnc, ctx.author)
+        if account1 == account2:
+            print('true')
+        else:
+            print('false')
 
     @commands.command(name='init', help='Adds all server members to the database if they do not exist already')
     @commands.guild_only()

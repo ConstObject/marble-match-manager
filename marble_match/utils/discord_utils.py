@@ -1,8 +1,11 @@
 import sqlite3
-import discord
 import logging
-from marble_match.database import database_operation
+from typing import Union
+
+import discord
 from discord.ext import commands
+
+import database.database_operation as database_operation
 
 logger = logging.getLogger('marble_match.discord_utils')
 
@@ -66,3 +69,41 @@ def get_id_by_member(ctx: commands.Context, connection: sqlite3.Connection, memb
     player_id = database_operation.get_player_id(connection, str(member), ctx.guild.id)
     logger.debug(f'player_id: {player_id}')
     return player_id
+
+
+def get_member_by_username(ctx: commands.Context, username: str) -> Union[discord.Member, int]:
+    """Returns a discord.Member from a username
+
+    **Arguments**
+
+    - `<ctx>` Context used to get server member list
+    - `<username>` String containing username to get member for
+
+    """
+    logger.debug(f'get_member_by_username: {username}')
+
+    # Checks if ctx.channel is dm, before grabbing member list
+    if isinstance(ctx.channel, discord.DMChannel):
+        logger.debug(f'ctx.channel is discord channel: {ctx}')
+        return 0
+
+    # Split username into name and discriminator ex. 'cchan#0000'
+    user_split = username.split('#')
+    logger.debug(f'user_split: {user_split}')
+
+    # Check if username length is 2, so we know if split was done
+    if len(user_split) != 2:
+        logger.error(f'Unexpected user_split length: {username}, {user_split}')
+        return 0
+
+    # Get member from ctx.guild.members with name and discriminator
+    member = discord.utils.get(ctx.guild.members, name=user_split[0], discriminator=user_split[1])
+    logger.debug(f'member: {member}')
+
+    # Check if member is discord.Member
+    if isinstance(member, discord.Member):
+        logger.debug(f'member is type discord.Member')
+        return member
+
+    logger.error(f'member is not type discord.Member')
+    return 0

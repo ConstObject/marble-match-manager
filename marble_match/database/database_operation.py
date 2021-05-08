@@ -271,7 +271,7 @@ def update_bet(connection: sqlite3.Connection, bet_id: int, player_id: int, amou
         return False
 
 
-def get_match_info_by_id(connection: sqlite3.Connection, match_id: int):
+def get_match_info_by_id(connection: sqlite3.Connection, match_id: int) -> Union[tuple, int]:
 
     logger.debug(f'get_match_info_by_id: {match_id}')
 
@@ -296,7 +296,7 @@ def get_match_info_by_id(connection: sqlite3.Connection, match_id: int):
         return 0
 
 
-def get_match_history_info(connection: sqlite3.Connection, match_id: int):
+def get_match_history_info(connection: sqlite3.Connection, match_id: int) -> Union[tuple, int]:
     logger.debug(f'get_match_history_info: {match_id}')
 
     query = "SELECT * FROM matches_history WHERE id=?"
