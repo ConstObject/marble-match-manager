@@ -59,32 +59,6 @@ class InitCog(commands.Cog, name='Initializations'):
                 print(f'Added {members.name} to database')
         await du.code_message(ctx, 'Any members not added to the database have been added')
 
-    @commands.command(name='info', help='Prints latest version info')
-    @commands.guild_only()
-    async def info(self, ctx: commands.Context):
-        """Prints latest version info
-
-        Examples:
-            - `$info`
-
-        **Arguments**
-
-        - `<ctx>` Context used to send confirmations.
-
-        """
-
-        text = f'```\n' \
-               f'Current version 1.0a\n' \
-               f'Features:\n' \
-               f'\t-Create marble matches with other discord members\n' \
-               f'\t-Bet on others matches\n' \
-               f'\t-View statistics about the server economy\n' \
-               f'\t-Transfer marbles to other users\n' \
-               f'\t-View match/bet history and stats from marble matches\n' \
-               f'```'
-
-        await ctx.send(text)
-
 
 def setup(bot):
     bot.add_cog(InitCog(bot))
