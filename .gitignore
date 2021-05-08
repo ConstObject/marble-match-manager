@@ -4,6 +4,8 @@
 /*.db
 /*.log
 /*.ini
+/*.txt
 /marble_match/*.db
 /marble_match/*.log
 /marble_match/*.ini
+/marble_match/*.txt
