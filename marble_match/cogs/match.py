@@ -8,6 +8,8 @@ import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.discord_utils as du
 import utils.account as acc
+import utils.matches as ma
+import utils.exception as error
 
 logger = logging.getLogger('marble_match.match')
 
@@ -85,12 +87,11 @@ class MatchCog(commands.Cog, name='Matches'):
             return
 
         # Creates the match with the players
-        match_id = database_operation.create_match(DbHandler.db_cnc,
-                                                   None, marbles, 0, challenger.id, recipient.id)
-        logger.debug(f'match_id: {match_id}')
+        match = ma.create_match(ctx, None, marbles, challenger, recipient) # database_operation.create_match(DbHandler.db_cnc, None, marbles, 0, challenger.id, recipient.id)
+        logger.debug(f'match: {match}')
         # Checks if match_id is valid, to verify match was created
-        if not match_id:
-            logger.debug('match_id is zero, failed to create match')
+        if not match:
+            logger.debug('match is zero, failed to create match')
             await du.code_message(ctx, 'Failed to create match', 3)
             return
 
@@ -102,7 +103,7 @@ class MatchCog(commands.Cog, name='Matches'):
                                    f'marbles'
                                    f'\nType \'$accept\' to accept their challenge.'
                                    f'\nType \'$close\' to decline the challenge.'
-                                   f'\nMatch ID: {match_id}')
+                                   f'\nMatch ID: {match.id}')
 
     @match.error
     async def match_error(self, ctx, error):
@@ -136,30 +137,32 @@ class MatchCog(commands.Cog, name='Matches'):
             return
 
         # Get match_info to get marble amount
-        match_info = database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
+        match = ma.get_match(ctx, match_id)  # database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
 
         # Checks if match_info is valid
-        if not match_info:
+        if not match:
             logger.debug('match_info is zero')
             await du.code_message(ctx, 'Unable to get match info')
             return
 
         # Check if user accepting is participant2
-        if player.id == match_info[3]:
+        if player.id == match.recipient.id:
             logger.debug(f'{ctx.author} tried to accept a match they aren\'t the recipient of')
             await du.code_message(ctx, 'You\'re not the recipient of a match')
             return
 
         # Updates match accepted flag in database, checks if write was successful and gives message
-        if not database_operation.update_match_accepted(DbHandler.db_cnc, match_id):
+        try:
+            match.accepted = True  # database_operation.update_match_accepted(DbHandler.db_cnc, match_id):
+        except error as e:
             logger.debug(f'Unable to update match accepted flag')
             await du.code_message(ctx, 'Was unable to accept match', 3)
             return
 
         # Subtracts marbles from user
-        player.marbles -= match_info[1]
+        player.marbles -= match.amount
 
-        await du.code_message(ctx, f'Match {match_id} accepted, now open for betting.'
+        await du.code_message(ctx, f'Match {match.id} accepted, now open for betting.'
                                    f'\nType \'$start\' to close the betting and start the match')
 
     @commands.command(name='start', help='Start the match and close betting')
@@ -187,8 +190,25 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, 'You don\'t have a match to start')
             return
 
+        try:
+            # Get match from match_id
+            match = ma.get_match(ctx, match_id)
+            logger.debug(f'match: {match}')
+        except error as e:
+            logger.error(f'Unable to get match from match_id')
+            await du.code_message(ctx, 'Was unable to get match please try again later', 3)
+            return
+
+        # Check if match is accepted
+        if not match.accepted:
+            logger.debug(f'match.accepted is false')
+            await du.code_message(ctx, 'You can only start matches the other player has accepted', 3)
+            return
+
         # Updates match accepted flag in database, checks if write was successful and gives message
-        if not database_operation.update_match_activity(DbHandler.db_cnc, match_id):
+        try:  # if not database_operation.update_match_activity(DbHandler.db_cnc, match_id):
+            match.active = True
+        except error as e:
             logger.debug(f'Unable to update match accepted flag')
             await du.code_message(ctx, 'Was unable to accept match', 3)
             return
@@ -224,31 +244,52 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, 'They have no active match', 3)
             return
         # Get match info from match_id
-        match_info = database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
-        logger.debug(f'match_id: {match_id}')
+        try:
+            match = ma.get_match(ctx, match_id)  # database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
+            logger.debug(f'match: {match}')
+        except error as e:
+            logger.error(f'Unable to get match: {e}')
+            await du.code_message(ctx, 'Unable to process match', 3)
+            return
 
         # Set loser to other participant
         # Checks if participant1 is winner if true sets loser to participant2, or participant1 otherwise
-        if winner.id == match_info[3]:
-            loser = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info[4])
+        if winner == match.challenger:
+            loser = match.recipient
         else:
-            loser = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info[3])
+            loser = match.challenger
         logger.debug(f'loser: {loser}')
 
-        # Add marbles to winner
-        winner.marbles += match_info[1]*2
-        # Adds win/lose to winner/loser
-        winner.wins += 1
-        loser.loses += 1
-        # Creates a entry of match in match_history table
-        database_operation.create_match_history(DbHandler.db_cnc, match_id, match_info[1], match_info[3],
-                                                match_info[4], winner.id, datetime.datetime.utcnow())
+        try:
+            # Set match winner
+            match.winner = winner
+            # Add marbles to winner
+            winner.marbles += match.amount * 2
+            # Adds win/lose to winner/loser
+            winner.wins += 1
+            loser.loses += 1
+        except error as e:
+            logger.error(f'Unable to update player stats: {e}')
+            await du.code_message(ctx, 'Was unable to update player stats please try again', 3)
+            return
+
         # Processes the bets on the match
         database_operation.process_bets(DbHandler.db_cnc, match_id, winner.id)
-        # Deletes the match
-        database_operation.delete_match(DbHandler.db_cnc, match_id)
+        logger.debug('Processed bets')
+        # Creates a entry of match in match_history table, deletes from matches
+        # database_operation.create_match_history(DbHandler.db_cnc, match_id, match_info[1], match_info[3],
+        #                                       match_info[4], winner.id, datetime.datetime.utcnow())
+        try:
+            match.is_history = True
+            match.match_time = datetime.datetime.utcnow()
+            logger.debug('Updated match info')
+            match.create_history()
+            logger.debug('Created match_history for match')
+        except error as e:
+            logger.error(f'Unable to create matches_history entry')
+            await du.code_message(ctx, f'Failed to add match to history or to delete from matches: {match.id}', 3)
 
-        await du.code_message(ctx, f'{member.display_name} is the winner, gaining a total of {match_info[1]} marbles!')
+        await du.code_message(ctx, f'{member.display_name} is the winner, gaining a total of {match.amount} marbles!')
 
     @commands.command(name='current', help='Lists info about you\'re current match')
     @commands.guild_only()
