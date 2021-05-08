@@ -296,6 +296,32 @@ def get_match_info_by_id(connection: sqlite3.Connection, match_id: int) -> Union
         return 0
 
 
+# TODO Update function ot use palyer2_id for simplified functions
+def get_match_info_all(connection: sqlite3.Connection, player_id: int, player2_id: int = None):
+
+    logger.debug(f'get_match_info_all: {player_id}')
+
+    query = "SELECT * FROM matches WHERE participant1=? OR participant2=?"
+    query_param = [player_id, player_id]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        results = cur.fetchall()
+
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+        logger.debug(f'results: {results}')
+
+        if results is not None:
+            return results
+        else:
+            return 0
+    except Error as e:
+        logger.error(f'There was an error selecting all matches from matches: {e}')
+        return 0
+
+
 def get_match_history_info(connection: sqlite3.Connection, match_id: int) -> Union[tuple, int]:
     logger.debug(f'get_match_history_info: {match_id}')
 
@@ -320,7 +346,8 @@ def get_match_history_info(connection: sqlite3.Connection, match_id: int) -> Uni
         return 0
 
 
-def get_match_history_info_all(connection: sqlite3.Connection, player_id: int):
+# TODO Update function ot use palyer2_id for simplified functions
+def get_match_history_info_all(connection: sqlite3.Connection, player_id: int, player2_id: int = None):
 
     logger.debug(f'get_match_history_info_all: {player_id}')
 
