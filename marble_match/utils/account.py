@@ -1,5 +1,6 @@
 import sqlite3
 import logging
+from typing import Union
 from dataclasses import dataclass
 
 import discord
@@ -8,7 +9,7 @@ from discord.ext import commands
 import database.database_operation as database_operation
 import database.database_setup as database_setup
 
-logger = logging.getLogger('marble_match.account')
+logger = logging.getLogger('marble_match.acc')
 
 
 @dataclass(order=True)
@@ -85,7 +86,7 @@ def get_account_from_db(ctx: commands.Context, connection: sqlite3.Connection, p
 
     - `<ctx>` Context used to get information.
     - `<connection>` sqlite3 connection to read from database.
-    - `<player_id>` id of players account in database
+    - `<player_id>` id of players acc in database
 
     """
     logger.debug(f'get_account_from_db: {player_id}')
@@ -100,11 +101,11 @@ def get_account_from_db(ctx: commands.Context, connection: sqlite3.Connection, p
 
     # split username into name & discriminator
     user_string = player_info[1].split('#')
-    # create and place new Account into account to return
+    # create and place new Account into acc to return
     account = Account(player_info[0],
                       discord.utils.get(ctx.guild.members, name=user_string[0], discriminator=user_string[1]),
                       player_info[2], player_info[3], player_info[4], player_info[5])
-    logger.debug(f'account: {account}')
+    logger.debug(f'acc: {account}')
     return account
 
 
@@ -115,7 +116,7 @@ def get_account(ctx: commands.Context, connection: sqlite3.Connection, member: d
 
     - `<ctx>` Context used to get server information
     - `<connection>` sqlite3 connection to read from database
-    - `<member>` member who's account we wish to get
+    - `<member>` member who's acc we wish to get
 
     """
     logger.debug(f'get_account: {member}')
@@ -133,10 +134,10 @@ def get_account(ctx: commands.Context, connection: sqlite3.Connection, member: d
 
     # Get Account from database
     account = get_account_from_db(ctx, connection, player_id)
-    # Check if account is zero, to return 0 if Account creation failed
+    # Check if acc is zero, to return 0 if Account creation failed
     if not account:
-        logger.debug('Unable to create account')
+        logger.debug('Unable to create acc')
         return 0
-    logger.debug(f'account: {account}')
+    logger.debug(f'acc: {account}')
 
     return account
