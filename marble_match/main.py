@@ -21,10 +21,10 @@ logger.addHandler(file_handler)
 
 logger.error('Ran')
 
-extensions_list = ['setup', 'match', 'bet_control', 'stats', 'economy', 'history']
-
 config = configparser.ConfigParser()
 config.read('marble_bot.ini')
+
+extensions_list = config['DEFAULT']['cogs'].split(',')
 
 token = config['DEFAULT']['discord_token']
 
