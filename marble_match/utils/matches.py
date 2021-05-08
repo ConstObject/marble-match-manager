@@ -138,8 +138,7 @@ def create_match(ctx, match_id: int, amount: int, challenger: acc.Account, recip
     return match
 
 
-def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: bool = False) -> \
-        Union[list[Match], int]:
+def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: bool = False) -> Union[list, int]:
     """Returns list of all Matches with user
 
     **Arguments**
@@ -291,7 +290,7 @@ def get_match(ctx: commands.Context, match_id: int, history: bool = False) -> Un
         return match
 
 
-def get_matches(ctx, user: acc.Account) -> Union[list[Match], int]:
+def get_matches(ctx, user: acc.Account) -> Union[list, int]:
     logger.debug(f'get_match: {user}')
 
     # Get matches for Account, check if valid
