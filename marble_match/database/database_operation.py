@@ -509,7 +509,32 @@ def get_bet_info(connection: sqlite3.Connection, bet_id: int):
         return 0
 
 
-def get_bet_info_all(connection: sqlite3.Connection, match_id: int):
+def get_bet_info_all(connection: sqlite3.Connection, player_id: int):
+
+    logger.debug(f'get_bet_info_all: {player_id}')
+
+    query = "SELECT * FROM bets WHERE better_id=?"
+    query_param = [player_id]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        results = cur.fetchall()
+
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+        logger.debug(f'results: {results}')
+
+        if results is not None:
+            return results
+        else:
+            return 0
+    except Error as e:
+        logger.error(f'There was an error selecting all bet_info from bets: {e}')
+        return 0
+
+
+def get_bet_info_match_all(connection: sqlite3.Connection, match_id: int):
 
     logger.debug(f'get_bet_info_all: {match_id}')
 
@@ -681,7 +706,7 @@ def delete_bet(connection: sqlite3.Connection, bet_id: int) -> bool:
 def delete_bet_by_match_id(connection: sqlite3.Connection, match_id: int):
 
     logger.debug(f'delete_bet_by_match_id: {match_id}')
-    bets = get_bet_info_all(connection, match_id)
+    bets = get_bet_info_match_all(connection, match_id)
     for bet in bets:
         add_marbles(connection, bet[3], bet[1])
         delete_bet(connection, bet[0])
@@ -747,7 +772,7 @@ def is_bet_win(connection: sqlite3.Connection, bet_id: int, winner_id: int) -> b
 def process_bets(connection: sqlite3.Connection, match_id: int, winner_id: int):
 
     logger.debug(f'process_bets: {match_id}, {winner_id}')
-    bets = get_bet_info_all(connection, match_id)
+    bets = get_bet_info_match_all(connection, match_id)
 
     logger.debug(f'bets: {bets}')
     marble_pot = 0
@@ -771,7 +796,7 @@ def process_bets(connection: sqlite3.Connection, match_id: int, winner_id: int):
             delete_bet(connection, x[0])
         marble_pot += x[1]
 
-    bets = get_bet_info_all(connection, match_id)
+    bets = get_bet_info_match_all(connection, match_id)
 
     for x in bets:
         if is_bet_win(connection, x[0], winner_id):
