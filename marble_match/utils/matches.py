@@ -98,7 +98,7 @@ class Match:
         self._match_time = time
 
     def create_history(self) -> bool:
-        logger.debug(f'Create_History: {self}')
+        logger.debug(f'match.create_History: {self}')
         # Check if create_match_history was successful, return True if it was
         if database_operation.create_match_history(DbHandler.db_cnc, self.id, self.amount, self.challenger.id,
                                                    self.recipient.id, self._winner.id, self._match_time):
@@ -133,7 +133,7 @@ def create_match(ctx, match_id: int, amount: int, challenger: acc.Account, recip
     logger.debug(f'match: {match}')
     if not match:
         logger.debug('Unable to create match')
-        raise exception.UnableToWrite
+        raise exception.UnableToRead
 
     return match
 
@@ -145,7 +145,7 @@ def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: 
 
     - `<ctx>` Context used to get information
     - `<user>` User who's matches you wish to get
-    - `<
+    - `<user2>` User who you wanna search for as well
     - `<history>` Used to get either match history or active matches
 
     """
@@ -166,22 +166,42 @@ def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: 
     # Loop through matches and create matches to return
     for match in matches:
         # Get challenger Account and check if valid
-        challenger = acc.get_account_from_db(ctx, DbHandler.db_cnc, match[3])
+        if history:
+            challenger_id = match[2]
+        else:
+            challenger_id = match[4]
+        challenger = acc.get_account_from_db(ctx, DbHandler.db_cnc, challenger_id)
         logger.debug(f'challenger: {challenger}')
         if not challenger:
             logger.error('Unable to get challenger acc')
             return 0
 
         # Get recipient Account and check if valid
-        recipient = acc.get_account_from_db(ctx, DbHandler.db_cnc, match[4])
+        if history:
+            recipient_id = match[3]
+        else:
+            recipient_id = match[4]
+        recipient = acc.get_account_from_db(ctx, DbHandler.db_cnc, recipient_id)
         logger.debug(f'recipient: {recipient}')
         if not recipient:
             logger.error('Unable to get challenger acc')
             return 0
 
         # Create match and check if valid before appending to list
-        append_match = Match(match[0], match[1], match[2], challenger, recipient, match[5])
+        if history:
+            logger.debug('history is true')
+            # Get winner Account and check if valid
+            winner = acc.get_account_from_db(ctx, DbHandler.db_cnc, match[4])
+            logger.debug(f'winner: {winner}')
+            if not winner:
+                logger.error('Unable to get winner account')
+                raise exception.UnableToRead
+            append_match = Match(match[0], match[1], True, challenger, recipient, True, winner, match[5], True)
 
+        else:
+            append_match = Match(match[0], match[1], match[2], challenger, recipient, match[5])
+
+        logger.debug(f'append_match: {append_match}')
         if isinstance(append_match, Match):
             match_list.append(append_match)
 
