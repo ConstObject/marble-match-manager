@@ -297,7 +297,7 @@ def get_match_info_by_id(connection: sqlite3.Connection, match_id: int) -> Union
 
 
 # TODO Update function ot use palyer2_id for simplified functions
-def get_match_info_all(connection: sqlite3.Connection, player_id: int, player2_id: int = None):
+def get_match_info_all(connection: sqlite3.Connection, player_id: int):
 
     logger.debug(f'get_match_info_all: {player_id}')
 
