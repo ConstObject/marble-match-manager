@@ -8,6 +8,8 @@ from discord.ext import commands
 
 import database.database_operation as database_operation
 import database.database_setup as database_setup
+import utils.discord_utils as du
+import utils.exception as exception
 
 logger = logging.getLogger('marble_match.acc')
 
@@ -20,6 +22,13 @@ class Account:
     server_id: int
     _wins: int
     _loses: int
+
+    @property
+    def winrate(self) -> float:
+        if self._wins:
+            return 100 * (self._wins / (self._wins + self._loses))
+        else:
+            return 0
 
     @property
     def marbles(self) -> int:
@@ -141,3 +150,37 @@ def get_account(ctx: commands.Context, connection: sqlite3.Connection, member: d
     logger.debug(f'acc: {account}')
 
     return account
+
+
+def get_account_server_all(ctx: commands.Context, connection: sqlite3.Connection, server_id: int) -> Union[list, int]:
+    """Returns list of all Accounts on a server
+
+    **Arguments**
+
+    - `<ctx>` Context used to get information
+    - `<connection>` Connection for database
+    - `<server_id>` Server_id to get all accounts for
+
+    """
+    logger.debug(f'get_account_server_all: {server_id}')
+
+    # Get player_list from database and validate
+    player_list = database_operation.get_player_info_all_by_server(connection, server_id)
+    logger.debug(f'player_list: {player_list}')
+    if not player_list:
+        logger.error('Unable to get player_list')
+        raise exception.UnableToRead
+
+    # Create list to return, and propagate list with accounts from player_list
+    account_list = []
+    for player in player_list:
+        logger.debug(f'player: {player}')
+        account_list.append(Account(player[0], du.get_member_by_username(ctx, player[1]), player[2],
+                                    player[3], player[4], player[5]))
+
+    # Check if list has been propagated
+    if not len(account_list):
+        logger.debug('account_list is empty')
+        raise exception.UnableToRead
+
+    return account_list
