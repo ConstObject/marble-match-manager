@@ -1,8 +1,15 @@
+import logging
+import operator
+
 import discord
-import database.database_operation as database_operation
-import utils.discord_utils as du
-from database.database_setup import DbHandler
 from discord.ext import commands
+
+import database.database_operation as database_operation
+from database.database_setup import DbHandler
+import utils.discord_utils as du
+import utils.account as acc
+
+logger = logging.getLogger(f'marble_match.{__name__}')
 
 
 class StatsCog(commands.Cog, name='Stats'):
@@ -25,74 +32,85 @@ class StatsCog(commands.Cog, name='Stats'):
         - `<member>` The user who's data you want to print. If omitted will defaults to your own data.
 
         """
+        logging.debug(f'wins: {member}')
 
+        # Check if member is None, use ctx.author if None
         if member is None:
             player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
             name = ctx.author.display_name
         else:
             player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
             name = member.display_name
-        player_wins = database_operation.get_player_wins(DbHandler.db_cnc, player_id)
-        player_loses = database_operation.get_player_loses(DbHandler.db_cnc, player_id)
 
-        if player_wins == 0:
+        # Get player Account
+        account = acc.get_account_from_db(ctx, DbHandler.db_cnc, player_id)
+        logger.debug(f'account: {account}')
+
+        # Set winrate to 0 if wins is zero, otherwise calculate winrate
+        if account.wins == 0:
             player_winrate = 0
         else:
-            player_winrate = 100 * (player_wins / (player_wins + player_loses))
+            player_winrate = 100 * (account.wins / (account.wins + account.loses))
 
-        await du.code_message(ctx, f'{name}\n'
-                                   f'Wins: {player_wins}'
-                                   f'\nLoses: {player_loses}'
-                                   f'\nWinrate: {player_winrate}%')
+        await du.code_message(ctx, f'{account.member.display_name}\n'
+                                   f'Wins: {account.wins}'
+                                   f'\nLoses: {account.loses}'
+                                   f'\nWinrate: {player_winrate:.2f}%')
+
+    @commands.command(name='list_stats', help='Lists of stats you can search by')
+    @commands.guild_only()
+    async def stat_list(self, ctx: commands.Context):
+        stats = ['wins', 'loses', 'marbles', 'winrate']
+        text = ''
+        for stat in stats:
+            text += f' {stat},'
+        await du.code_message(ctx, f'You can use any of these stats with leaderboard command:{text}')
 
     @commands.command(name='leaderboard',
                       help='Will list top 10 players by winrate, or give position of member on leaderboard')
     @commands.guild_only()
-    async def leaderboard(self, ctx: commands.Context, members: discord.Member = None):
+    async def leaderboard(self, ctx: commands.Context, stat: str, members: discord.Member = None):
         """Lists top 10 players by winrate, or a specific users position on leaderboard
 
         Examples:
-            - `$leaderboard @Sophia`
+            - `$leaderboard winrate @Sophia`
             - `$leaderboard`
+            - `$leaderboard wins`
 
         **Arguments**
 
         - `<ctx>` The context used to send confirmations.
+        - `<stat>` String of stat to get
         - `<members>` The member who's position on leaderboard you'd like to receive.
 
         """
+        logger.debug(f'leaderboard: {members}')
 
-        player_info = database_operation.get_player_info_all_by_server(DbHandler.db_cnc, ctx.guild.id)
+        # Get accounts of all users on server
+        player_info = acc.get_account_server_all(ctx, DbHandler.db_cnc, ctx.guild.id)  # database_operation.get_player_info_all_by_server(DbHandler.db_cnc, ctx.guild.id)
+
+        # Creation function to get stats based on string
+        stat_get = operator.attrgetter(stat)
 
         players = []
 
-        for user in ctx.guild.members:
-            if du.get_id_by_member(ctx, DbHandler.db_cnc, user) != 0:
-                player_data = database_operation.get_player_info(DbHandler.db_cnc,
-                                                                 du.get_id_by_member(
-                                                                     ctx, DbHandler.db_cnc, user))
-                if player_data[4] == 0:
-                    winrate = 0
-                elif player_data[5] == 0:
-                    winrate = 100
-                else:
-                    winrate = 100 * (player_data[4] / (player_data[4] + player_data[5]))
-
-                players.append((player_data[1], player_data[4], player_data[5], winrate))
-
-        players.sort(key=lambda players: players[3], reverse=True)
+        players = sorted(player_info, key=stat_get, reverse=True)
 
         if members is not None:
             for player in players:
-                if player[0] == str(members):
+                if player.member == members:
                     await du.code_message(ctx, f'{members.display_name} is rank #{players.index(player) + 1}, '
-                                               f'with a win-rate of {player[3]}%')
+                                               f'with a win-rate of {player.winrate:.2f}%')
+                    return
             return
 
-        text = "Leaderboard top 10 win-rate\n\n"
+        text = f"Leaderboard top 10 {stat}\n\n"
 
         for player in players[0:10]:
-            text += (f'#{players.index(player) + 1}. {player[0]}: %.0f' % player[3]) + '%\n'
+            if stat == 'winrate':
+                text += f'#{players.index(player)} {player.member.display_name}: {stat_get(player):.2f}%\n'
+            else:
+                text += f'#{players.index(player)} {player.member.display_name}: {stat_get(player)}\n'
 
         await du.code_message(ctx, text)
 
