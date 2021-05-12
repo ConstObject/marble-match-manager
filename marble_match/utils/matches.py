@@ -152,7 +152,10 @@ def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: 
     logger.debug(f'get_matches_all: {user}, {user2}, {history}')
 
     # Get all matches with user.id
-    matches = database_operation.get_match_info_all(DbHandler.db_cnc, user.id)
+    if history:
+        matches = database_operation.get_match_history_info_all(DbHandler.db_cnc, user.id)
+    else:
+        matches = database_operation.get_match_info_all(DbHandler.db_cnc, user.id)
     logger.debug(f'matches: {matches}')
 
     # Check if matches is valid
@@ -188,9 +191,11 @@ def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: 
             return 0
 
         # Check if user2 is not none, to change search to games with user2
-        if not isinstance(user2, None):
+        if user2 is not None:
             logger.debug('user2 is not None')
-            if challenger != user2 or recipient != user2:
+            if challenger.id == user2.id or recipient.id == user2.id:
+                pass
+            else:
                 continue
 
         # Create match and check if valid before appending to list
