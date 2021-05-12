@@ -47,7 +47,8 @@ class Account:
             self._marbles = amount
             logger.debug('Updated marbles')
         else:
-            logger.debug('Unable to update marbles')
+            logger.error('Unable to update marbles')
+            raise exception.UnableToWrite(_class='Account', _attribute='marbles', _value=amount)
 
     @property
     def wins(self) -> int:
@@ -66,7 +67,8 @@ class Account:
             self._wins = amount
             logger.debug('Updated wins')
         else:
-            logger.debug('Unable to update marbles')
+            logger.error('Unable to update marbles')
+            raise exception.UnableToWrite(_class='Account', _attribute='wins', _value=amount)
 
     @property
     def loses(self) -> int:
@@ -85,7 +87,8 @@ class Account:
             self._loses = amount
             logger.debug('Updated loses')
         else:
-            logger.debug('Unable to update loses')
+            logger.error('Unable to update loses')
+            raise exception.UnableToWrite(_class='Account', _attribute='loses', _value=amount)
 
 
 def get_account_from_db(ctx: commands.Context, connection: sqlite3.Connection, player_id: int):
@@ -105,8 +108,8 @@ def get_account_from_db(ctx: commands.Context, connection: sqlite3.Connection, p
     logger.debug(f'player_info: {player_info}')
     # check that player_info has player information return 0 if it doesn't
     if not player_info:
-        logger.debug('player_info is empty')
-        return 0
+        logger.error('player_info is empty')
+        raise exception.UnexpectedEmpty(_attribute='users')
 
     # split username into name & discriminator
     user_string = player_info[1].split('#')
@@ -131,22 +134,22 @@ def get_account(ctx: commands.Context, connection: sqlite3.Connection, member: d
     logger.debug(f'get_account: {member}')
     # Check if ctx.channel is dm, return 0 if it is
     if isinstance(ctx.channel, discord.DMChannel):
-        logger.debug('ctx channel is dm, get_account not allowed in dms')
-        return 0
+        logger.error('ctx channel is dm, get_account not allowed in dms')
+        raise exception.DiscordDM
 
     # Get id from database and put into player_id
     player_id = database_operation.get_player_id(connection, str(member), ctx.guild.id)
     # If player_id is 0, no index in database, return 0
     if not player_id:
-        logger.debug('player_id was not found')
-        return 0
+        logger.error('player_id was not found')
+        raise exception.UnexpectedEmpty(_attribute='user')
 
     # Get Account from database
     account = get_account_from_db(ctx, connection, player_id)
     # Check if acc is zero, to return 0 if Account creation failed
     if not account:
-        logger.debug('Unable to create acc')
-        return 0
+        logger.error('Unable to create acc')
+        raise exception.UnexpectedEmpty(_class='Account', _attribute='account')
     logger.debug(f'acc: {account}')
 
     return account
@@ -169,7 +172,7 @@ def get_account_server_all(ctx: commands.Context, connection: sqlite3.Connection
     logger.debug(f'player_list: {player_list}')
     if not player_list:
         logger.error('Unable to get player_list')
-        raise exception.UnableToRead
+        raise exception.UnableToRead(_attribute='user')
 
     # Create list to return, and propagate list with accounts from player_list
     account_list = []
@@ -180,7 +183,7 @@ def get_account_server_all(ctx: commands.Context, connection: sqlite3.Connection
 
     # Check if list has been propagated
     if not len(account_list):
-        logger.debug('account_list is empty')
-        raise exception.UnableToRead
+        logger.error('account_list is empty')
+        raise exception.UnexpectedEmpty(_class='Account', _attribute='account')
 
     return account_list
