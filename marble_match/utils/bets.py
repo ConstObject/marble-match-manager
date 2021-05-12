@@ -141,7 +141,10 @@ def get_bet_all(ctx: commands.Context, user: account.Account, user2: account.Acc
     logger.debug(f'bets.get_bet_all: {user}, {user2}, {history}')
 
     # Get all bets with user.id, check if bets is valid
-    bets = database_operation.get_bet_info_all(DbHandler.db_cnc, user.id)
+    if history:
+        bets = database_operation.get_bet_history_info_all(DbHandler.db_cnc, user.id)
+    else:
+        bets = database_operation.get_bet_info_all(DbHandler.db_cnc, user.id)
     if not bets:
         logger.error('bets is zero')
         raise exception.UnableToRead
@@ -163,7 +166,7 @@ def get_bet_all(ctx: commands.Context, user: account.Account, user2: account.Acc
             logger.error('Unable to get bet_target account')
             raise exception.UnableToRead
         # Get match and check if valid
-        match = matches.get_match(ctx, bet[2])
+        match = matches.get_match(ctx, bet[2], history)
         logger.debug(f'match: {match}')
         if not match:
             logger.error('Unable to get match')
