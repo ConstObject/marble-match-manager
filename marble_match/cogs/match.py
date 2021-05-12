@@ -19,6 +19,9 @@ class MatchCog(commands.Cog, name='Matches'):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    def function1(self):
+        raise exception.UnableToRead(attribute='test')
+
     @commands.command(name='match', help='Challenge a user to a marble match, for all the marbles')
     @commands.guild_only()
     async def match(self, ctx: commands.Context, member: discord.Member, marbles: int):
@@ -106,10 +109,22 @@ class MatchCog(commands.Cog, name='Matches'):
                                    f'\nMatch ID: {match.id}')
 
     @match.error
-    async def match_error(self, ctx, error):
+    async def generic_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
-            await du.code_message(ctx, f'You\'re missing required argument: {error.param.name}', 3)
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
             await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
     @commands.command(name='accept', help='Accept a challenge')
     @commands.guild_only()
@@ -154,7 +169,7 @@ class MatchCog(commands.Cog, name='Matches'):
         # Updates match accepted flag in database, checks if write was successful and gives message
         try:
             match.accepted = True  # database_operation.update_match_accepted(DbHandler.db_cnc, match_id):
-        except exception.Error as e:
+        except commands.CommandError as e:
             logger.debug(f'Unable to update match accepted flag')
             await du.code_message(ctx, 'Was unable to accept match', 3)
             return
@@ -164,6 +179,24 @@ class MatchCog(commands.Cog, name='Matches'):
 
         await du.code_message(ctx, f'Match {match.id} accepted, now open for betting.'
                                    f'\nType \'$start\' to close the betting and start the match')
+
+    @accept.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
     @commands.command(name='start', help='Start the match and close betting')
     @commands.guild_only()
@@ -194,7 +227,7 @@ class MatchCog(commands.Cog, name='Matches'):
             # Get match from match_id
             match = ma.get_match(ctx, match_id)
             logger.debug(f'match: {match}')
-        except exception.Error as e:
+        except commands.CommandError as e:
             logger.error(f'Unable to get match from match_id')
             await du.code_message(ctx, 'Was unable to get match please try again later', 3)
             return
@@ -208,11 +241,29 @@ class MatchCog(commands.Cog, name='Matches'):
         # Updates match accepted flag in database, checks if write was successful and gives message
         try:  # if not database_operation.update_match_activity(DbHandler.db_cnc, match_id):
             match.active = True
-        except exception.Error as e:
+        except commands.CommandError as e:
             logger.debug(f'Unable to update match accepted flag')
             await du.code_message(ctx, 'Was unable to accept match', 3)
             return
         await du.code_message(ctx, f'Match {match_id} started, betting is closed and all bets are locked in.')
+
+    @match_start.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
     @commands.command(name='winner', help='Selects the winner of a marble match, and transfers marbles')
     @commands.guild_only()
@@ -247,7 +298,7 @@ class MatchCog(commands.Cog, name='Matches'):
         try:
             match = ma.get_match(ctx, match_id)  # database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
             logger.debug(f'match: {match}')
-        except exception.Error as e:
+        except commands.CommandError as e:
             logger.error(f'Unable to get match: {e}')
             await du.code_message(ctx, 'Unable to process match', 3)
             return
@@ -268,7 +319,7 @@ class MatchCog(commands.Cog, name='Matches'):
             # Adds win/lose to winner/loser
             winner.wins += 1
             loser.loses += 1
-        except exception.Error as e:
+        except commands.CommandError as e:
             logger.error(f'Unable to update player stats: {e}')
             await du.code_message(ctx, 'Was unable to update player stats please try again', 3)
             return
@@ -283,11 +334,29 @@ class MatchCog(commands.Cog, name='Matches'):
             logger.debug('Updated match info')
             match.create_history()
             logger.debug('Created match_history for match')
-        except exception.Error as e:
+        except commands.CommandError as e:
             logger.error(f'Unable to create matches_history entry')
             await du.code_message(ctx, f'Failed to add match to history or to delete from matches: {match.id}', 3)
 
         await du.code_message(ctx, f'{member.display_name} is the winner, gaining a total of {match.amount} marbles!')
+
+    @accept.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
     @commands.command(name='current', help='Lists info about you\'re current match')
     @commands.guild_only()
@@ -326,6 +395,24 @@ class MatchCog(commands.Cog, name='Matches'):
         await du.code_message(ctx, f'Match between {player_info1.member.display_name} and '
                                    f'{player_info2.member.display_name} for {match_info.amount} marbles'
                                    f'\nMatch ID: {match_info.id}')
+
+    @current.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
     @commands.command(name='close', help='Closes your pending match, if it has not been started')
     @commands.guild_only()
@@ -388,6 +475,24 @@ class MatchCog(commands.Cog, name='Matches'):
 
         database_operation.delete_bet_by_match_id(DbHandler.db_cnc, match_id)
         await du.code_message(ctx, f'Closed match {match_id}.')
+
+    @close_current_match.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
 
 def setup(bot):
