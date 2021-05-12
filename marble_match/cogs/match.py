@@ -277,8 +277,6 @@ class MatchCog(commands.Cog, name='Matches'):
         database_operation.process_bets(DbHandler.db_cnc, match_id, winner.id)
         logger.debug('Processed bets')
         # Creates a entry of match in match_history table, deletes from matches
-        # database_operation.create_match_history(DbHandler.db_cnc, match_id, match_info[1], match_info[3],
-        #                                       match_info[4], winner.id, datetime.datetime.utcnow())
         try:
             match.is_history = True
             match.match_time = datetime.datetime.utcnow()
@@ -317,16 +315,17 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, 'No current match')
             return
         # Gets match_info to display back to the user
-        match_info = database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
+        match_info = ma.get_match(ctx, match_id)  # database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
         logger.debug(f'match_info: {match_info}')
 
         # Get Accounts of both participants
-        player_info1 = database_operation.get_player_info(DbHandler.db_cnc, match_info[3])
-        player_info2 = database_operation.get_player_info(DbHandler.db_cnc, match_info[4])
+        player_info1 = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info.challenger.id)  # database_operation.get_player_info(DbHandler.db_cnc, match_info[3])
+        player_info2 = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info.recipient.id)  # database_operation.get_player_info(DbHandler.db_cnc, match_info[4])
         logger.debug(f'player_info1: {player_info1}, player_info2: {player_info2}')
 
-        await du.code_message(ctx, f'Match between {player_info1[1]} and {player_info2[1]} for {match_info[1]} marbles'
-                                   f'\nMatch ID: {match_id}')
+        await du.code_message(ctx, f'Match between {player_info1.member.display_name} and '
+                                   f'{player_info2.member.display_name} for {match_info.amount} marbles'
+                                   f'\nMatch ID: {match_info.id}')
 
     @commands.command(name='close', help='Closes your pending match, if it has not been started')
     @commands.guild_only()
@@ -349,15 +348,15 @@ class MatchCog(commands.Cog, name='Matches'):
         logger.debug(f'player_id: {player_id}, match_id: {match_id}')
 
         # Gets match_info to return marbles back to participants
-        match_info = database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
+        match_info = ma.get_match(ctx, match_id)  # database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
         logger.debug(f'match_info: {match_info}')
 
         player2_refund = False
 
         # Checks if match is accepted by participant2
-        if match_info[5]:  # Match is accepted
+        if match_info.accepted:  # Match is accepted
             # Gets participant2's Account to change marbles
-            player2 = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info[4])
+            player2 = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info.recipient.id)
             logger.debug(f'player2: {player2}')
             # Checks if player2 is 0, then returns if 0
             if not player2:
@@ -369,7 +368,7 @@ class MatchCog(commands.Cog, name='Matches'):
             logger.debug(f'player2_refund: {player2_refund}')
 
         # Get participant1's Account to refund player for match amount
-        player1 = acc.get_account_from_db(ctx, DbHandler.db_cnc, int(match_info[3]))
+        player1 = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info.challenger.id)
         # Check if player1 is 0, then returns if 0
         if not player1:
             logger.debug('Unable to get participant1 Account')
