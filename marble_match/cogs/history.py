@@ -1,6 +1,7 @@
 import asyncio
 import math
 import datetime
+import logging
 
 import pytz
 import discord
@@ -9,6 +10,11 @@ from discord.ext import commands
 import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.discord_utils as du
+import utils.account as acc
+import utils.matches as ma
+import utils.bets as bets
+
+logger = logging.getLogger(f'marble_match.{__name__}')
 
 
 class HistoryCog(commands.Cog, name='History'):
@@ -27,6 +33,41 @@ class HistoryCog(commands.Cog, name='History'):
         date2 = date.replace(tzinfo=pytz.utc).astimezone(pytz.timezone('US/Eastern'))
         return pytz.timezone('US/Eastern').normalize(date2)
 
+    def generate_match_text(self, match: ma.Match) -> str:
+        return_text = ''
+        # Append match amount
+        return_text += f'{match.amount}\t'
+        # If challenger is winner, append crown
+        if match.challenger.id == match.winner.id:
+            return_text += f'♕'
+        # Append challenger display name and vs
+        return_text += f'{match.challenger.member.display_name}\t vs \t'
+        # If recipient is winner, append crown
+        if match.recipient.id == match.winner.id:
+            return_text += f'♕'
+        # Append recipient display name
+        return_text += f'{match.recipient.member.display_name}\t'
+        # Append match time
+        return_text += f'{self.utc_to_est(match.match_time).strftime("%x %X")}\n'
+
+        return return_text
+
+    def generate_bet_text(self, bet: bets.Bet):
+        return_text = ''
+        # Append bet amount
+        return_text += f'{bet.amount}\t'
+        # Append bet_target
+        return_text += f'{bet.bet_target.member.display_name}\t'
+        # Append won or lost
+        if bet.bet_target.id == bet.winner.id:
+            return_text += 'Won\t'
+        else:
+            return_text += 'Lost\t'
+        # Append bet_time
+        return_text += f'{self.utc_to_est(bet.bet_time).strftime("%x %X")}\n'
+
+        return return_text
+
     @commands.command(name='match_history', help='Prints out a users match history')
     @commands.guild_only()
     async def match_history(self, ctx: commands.Context, member: discord.Member = None, vs: discord.Member = None):
@@ -43,99 +84,112 @@ class HistoryCog(commands.Cog, name='History'):
         - `<vs>` The user to limit the match history to only games with them
 
         """
+        logger.debug(f'match_history: {member}, {vs}')
 
+        # Declare player2 as none for failsafe with ma.get_matches_all
+        player2 = None
+
+        # Check if member is None, if it is, set member to ctx.author
         if not member:
             member = ctx.author
-
+        # Check if vs exists, use vs to get opponent_id
         if vs:
             opponent_id = du.get_id_by_member(ctx, DbHandler.db_cnc, vs)
+            player2 = acc.get_account_from_db(ctx, DbHandler.db_cnc, opponent_id)
 
+        # Get player_id and match history for player_id
         player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
-        match_history = database_operation.get_match_history_info_all(DbHandler.db_cnc, player_id)
+        player1 = acc.get_account_from_db(ctx, DbHandler.db_cnc, player_id)
+        match_history = ma.get_matches_all(ctx, player1, player2, True)  # database_operation.get_match_history_info_all(DbHandler.db_cnc, player_id)
 
+        # Check if match_history is not 0
         if not match_history:
             await du.code_message(ctx, 'No match history')
             return
 
+        # Instantiate text and match_list to be appended later
         text = ''
-        match_list = []
+        match_list = match_history
 
-        # ♕
-
-        for matches in match_history:
-            text = ''
-            if vs:
-                if matches[2] != opponent_id and matches[3] != opponent_id:
-                    continue
-
-            text += f'{matches[1]}\t'
-
-            if matches[2] == matches[4]:
-                text += '♕'
-            text += f'{du.get_member_by_player_id(ctx, DbHandler.db_cnc, matches[2]).display_name}\t vs \t'
-
-            if matches[3] == matches[4]:
-                text += '♕'
-            text += f'{du.get_member_by_player_id(ctx, DbHandler.db_cnc, matches[3]).display_name}\t'
-
-            text += f'{self.utc_to_est(matches[5]).strftime("%x %X")}\n'
-            match_list.append(text)
-
+        # Set pages to amount of match_list/10 in an even amount, cur_page to last page, and active to true
         text = ''
         pages = math.ceil(len(match_list)/10)
         cur_page = pages-1
+        # Used to loop waiting for a react
         active = True
 
+        # Generate page from match_list
         for i in range(cur_page*10, (cur_page*10) + 10):
             if i < len(match_list):
-                text += str(match_list[i])
+                text += self.generate_match_text(match_list[i])  # text += str(match_list[i])
 
+        # If pages is greater than one, add a page counter, if not set active to False
         if pages > 1:
             text += f'Page {cur_page+1} of {pages}\n'
         else:
             active = False
 
+        # Create message with return of du.code_message
         message = await du.code_message(ctx, text)
 
+        # If pages greater than one, add reaction controls
         if pages > 1:
-            await message.add_reaction('\U00002B05')
-            await message.add_reaction('\U000027A1')
+            await message.add_reaction('\U00002B05')  # ⬅️
+            await message.add_reaction('\U000027A1')  # ➡️
 
+        # Method to check if react is the correction with the correct user
         def check(reaction, user):
             return user == ctx.author and str(reaction.emoji) in ['\U00002B05', '\U000027A1']
 
+        # While loop
         while active:
             try:
+                # page set to start of codeblock
                 page = '```\n'
+                # wait till we get a reaction, fill reaction, user with output of 'reaction_add'
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check)
-                if str(reaction.emoji) == '\U00002B05' and cur_page > 0:
+                # If reaction is left and cur_page is greater than 0
+                if str(reaction.emoji) == '\U00002B05' and cur_page > 0:  # ⬅️️
+                    # Set current page to one less than current
                     cur_page -= 1
 
+                    # For range of pages for current list append match_list to page
                     for i in range(cur_page*10, cur_page*10 + 10):
-                        page += match_list[i]
+                        page += self.generate_match_text(match_list[i])  # match_list[i]
 
+                    # Add page counter and edit message with page
                     page += f'Page {cur_page+1} of {pages}\n```'
                     await message.edit(content=page)
 
+                    # Remove users reaction
                     await message.remove_reaction(reaction, user)
-                    print('left')
 
-                elif str(reaction.emoji) == '\U000027A1' and cur_page < pages-1:
+                # If reaction is right and cur_page is less than pages-1
+                elif str(reaction.emoji) == '\U000027A1' and cur_page < pages-1:  # ➡️
+                    # Set current page to one more than current
                     cur_page += 1
 
+                    # For range of pages for current list append match_list to page
                     for i in range(cur_page*10, cur_page*10 + 10):
                         if i < len(match_list):
-                            page += match_list[i]
+                            page += self.generate_match_text(match_list[i])  # match_list[i]
 
+                    # Add page counter and edit message with page
                     page += f'Page {cur_page+1} of {pages}\n```'
                     await message.edit(content=page)
 
+                    # Remove users reaction
                     await message.remove_reaction(reaction, user)
-                    print('right')
                 else:
+                    # Remove reaction if it's anything else
                     await message.remove_reaction(reaction, user)
             except asyncio.TimeoutError:
+                # When 'reaction_add' throws exception, set active to False to end loop
                 active = False
+                # Get cached message to remove reactions
+                cached_msg = discord.utils.get(self.bot.cached_messages, id=message.id)
+                for reactions in cached_msg.reactions:
+                    await reactions.remove(self.bot.user)
 
     @commands.command(name='bet_history', help='Prints out a users bet history')
     @commands.guild_only()
@@ -153,94 +207,104 @@ class HistoryCog(commands.Cog, name='History'):
         - '<bet_target>' The user you want to limit bets on to.
 
         """
+        logger.debug(f'bet_history: {member}, {bet_target}')
 
+        # Declare bet_target_acc as failsafe for bets.get_bet_all
+        bet_target_acc = None
+        # If member is None set member to ctx.author
         if not member:
             member = ctx.author
-
+        # If bet_target is not None, get bet_target info for specific search
         if bet_target:
             bet_target_id = du.get_id_by_member(ctx, DbHandler.db_cnc, bet_target)
+            bet_target_acc = acc.get_account_from_db(ctx, DbHandler.db_cnc, bet_target_id)
 
+        # Get bettor info and bet_history
         better_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
-        bet_history = database_operation.get_bet_history_info_all(DbHandler.db_cnc, better_id)
+        bettor = acc.get_account_from_db(ctx, DbHandler.db_cnc, better_id)
+        bet_history = bets.get_bet_all(ctx, bettor, bet_target_acc, True)  # database_operation.get_bet_history_info_all(DbHandler.db_cnc, better_id)
 
-        if bet_history == 0 or bet_history == []:
+        # Check if bet_history is filled
+        if not bet_history:
             await du.code_message(ctx, 'No bet history')
             return
 
+        # Create variables to be appended
         text = ''
-        bet_list = []
-
-        for bet in bet_history:
-            text = ''
-            if bet_target:
-                if bet[4] != bet_target_id:
-                    continue
-            text += f'{bet[1]}\t'
-            text += f'{du.get_member_by_player_id(ctx, DbHandler.db_cnc, bet[4]).display_name}\t'
-
-            if bet[4] == bet[5]:
-                text += 'Won\t'
-            else:
-                text += 'Lost\t'
-
-            text += f'{self.utc_to_est(bet[6]).strftime("%x %X")}\n'
-            bet_list.append(text)
-
-        text = ''
+        bet_list = bet_history
+        # Set pages to bet_list/10 even, cur_page to pages-1 and active to True
         pages = math.ceil(len(bet_list)/10)
         cur_page = pages-1
         active = True
 
+        # Generate first page to be displayed with cur_page
         for i in range(cur_page*10, (cur_page*10) + 10):
             if i < len(bet_list):
-                text += str(bet_list[i])
+                text += self.generate_bet_text(bet_list[i])
 
+        # If pages is greater than one, append a page counter
         if pages > 1:
             text += f'Page {cur_page+1} of {pages}\n'
         else:
             active = False
 
+        # Send message
         message = await du.code_message(ctx, text)
 
+        # If pages is greater than one add reactions for control
         if pages > 1:
             await message.add_reaction('\U00002B05')
             await message.add_reaction('\U000027A1')
 
+        # Function to check if reaction = ctx.author
         def check(reaction, user):
             return user == ctx.author and str(reaction.emoji) in ['\U00002B05', '\U000027A1']
 
+        # loop for reaction controls
         while active:
             try:
+                # Set page to start of codeblock
                 page = '```\n'
+                # wait till we get a reaction, fill reaction, user with output of 'reaction_add'
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check)
-                if str(reaction.emoji) == '\U00002B05' and cur_page > 0:
+                # Check if reaction is left, and cur_page greater than zero
+                if str(reaction.emoji) == '\U00002B05' and cur_page > 0:  # ⬅️
+                    # Set cur_page to current value minus one
                     cur_page -= 1
 
+                    # Generate current page with cur_page
                     for i in range(cur_page*10, cur_page*10 + 10):
-                        page += bet_list[i]
+                        page += self.generate_bet_text(bet_list[i])  # bet_list[i]
 
+                    # Append page counter and edit message with page
                     page += f'Page {cur_page+1} of {pages}\n```'
                     await message.edit(content=page)
-
+                    # Remove user reaction
                     await message.remove_reaction(reaction, user)
-                    print('left')
-
-                elif str(reaction.emoji) == '\U000027A1' and cur_page < pages-1:
+                # Check if reaction is right, and cur_page less than pages-1
+                elif str(reaction.emoji) == '\U000027A1' and cur_page < pages-1:  # ➡️
+                    # Set cur_page to current value plus one
                     cur_page += 1
 
+                    # Generate current page with cur_page
                     for i in range(cur_page*10, cur_page*10 + 10):
                         if i < len(bet_list):
-                            page += bet_list[i]
+                            page += self.generate_bet_text(bet_list[i])  # bet_list[i]
 
+                    # Append page counter and edit message with page
                     page += f'Page {cur_page+1} of {pages}\n```'
                     await message.edit(content=page)
-
+                    # Remove user reaction
                     await message.remove_reaction(reaction, user)
-                    print('right')
                 else:
                     await message.remove_reaction(reaction, user)
             except asyncio.TimeoutError:
+                # When 'reaction_add' gets a timeout, set active to false to end loop
                 active = False
+                # Get cached message to remove all reactions
+                cached_msg = discord.utils.get(self.bot.cached_messages, id=message.id)
+                for reactions in cached_msg.reactions:
+                    await reactions.remove(self.bot.user)
 
 
 def setup(bot):
