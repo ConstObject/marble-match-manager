@@ -40,7 +40,7 @@ class Match:
             logger.debug('Updated active')
         else:
             logger.error('Unable to update active')
-            raise exception.UnableToWrite(_class='Match', _attribute='active', _value=activity)
+            raise exception.UnableToWrite(class_='Match', attribute='active', value=activity)
 
     @property
     def accepted(self) -> bool:
@@ -56,7 +56,7 @@ class Match:
             logger.debug('Updated accepted')
         else:
             logger.error('Unable to update accepted')
-            raise exception.UnableToWrite(_class='Match', _attribute='accepted', _value=accepted)
+            raise exception.UnableToWrite(class_='Match', attribute='accepted', value=accepted)
 
     @property
     def winner(self) -> acc.Account:
@@ -72,8 +72,8 @@ class Match:
             self._winner = winner_id
         else:
             logger.error(f'Attempted to change winner_id to invalid id: {self}')
-            raise exception.UnexpectedValue(_class='Match', _attribute='winner', _value=winner_id,
-                                            _expected_values=[self.challenger, self.recipient])
+            raise exception.UnexpectedValue(class_='Match', attribute='winner', value=winner_id,
+                                            expected_values=[self.challenger, self.recipient])
 
     @property
     def is_history(self) -> bool:
@@ -109,12 +109,12 @@ class Match:
             # Delete match from table, raise exception if unable to write
             if not database_operation.delete_match(DbHandler.db_cnc, self.id):
                 logger.error('Unable to delete match from matches')
-                raise exception.UnableToDelete(_attribute='matches')
+                raise exception.UnableToDelete(attribute='matches')
 
             return True
         else:
             logger.error('Unable to write to match_history')
-            raise exception.UnableToWrite(_attribute='match_history')
+            raise exception.UnableToWrite(attribute='match_history')
 
 
 def create_match(ctx, match_id: int, amount: int, challenger: acc.Account, recipient: acc.Account,
@@ -129,14 +129,14 @@ def create_match(ctx, match_id: int, amount: int, challenger: acc.Account, recip
     # Check if match_id is valid (Non zero)
     if not match_id:
         logger.error('Unable to create match')
-        raise exception.UnableToWrite(_attribute='matches')
+        raise exception.UnableToWrite(attribute='matches')
 
     # Create Match from match_id, check if match is valid
     match = get_match(ctx, match_id)
     logger.debug(f'match: {match}')
     if not match:
         logger.error('Unable to create match')
-        raise exception.UnableToRead(_class='Match', _attribute='match')
+        raise exception.UnableToRead(class_='Match', attribute='match')
 
     return match
 
@@ -165,9 +165,9 @@ def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: 
     if not matches:
         logger.error('matches is zero')
         if history:
-            raise exception.UnableToRead(_attribute='matches')
+            raise exception.UnableToRead(attribute='matches')
         else:
-            raise exception.UnableToRead(_attribute='matches_history')
+            raise exception.UnableToRead(attribute='matches_history')
 
     # Create match list to return
     match_list = []
@@ -183,7 +183,7 @@ def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: 
         logger.debug(f'challenger: {challenger}')
         if not challenger:
             logger.error('Unable to get challenger acc')
-            raise exception.UnableToRead(_class='Account', _attribute='account')
+            raise exception.UnableToRead(class_='Account', attribute='account')
 
         # Get recipient Account and check if valid
         if history:
@@ -194,7 +194,7 @@ def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: 
         logger.debug(f'recipient: {recipient}')
         if not recipient:
             logger.error('Unable to get challenger acc')
-            raise exception.UnableToRead(_class='Account', _attribute='account')
+            raise exception.UnableToRead(class_='Account', attribute='account')
 
         # Check if user2 is not none, to change search to games with user2
         if user2 is not None:
@@ -212,7 +212,7 @@ def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: 
             logger.debug(f'winner: {winner}')
             if not winner:
                 logger.error('Unable to get winner account')
-                raise exception.UnableToRead(_class='Account', _attribute='account')
+                raise exception.UnableToRead(class_='Account', attribute='account')
             append_match = Match(match[0], match[1], True, challenger, recipient, True, winner, match[5], True)
 
         else:
@@ -271,7 +271,7 @@ def get_match(ctx: commands.Context, match_id: int, history: bool = False) -> Un
         # Checks if challenger is int, if true return 0
         if isinstance(challenger, int):
             logger.error('challenger is type int')
-            raise exception.UnableToRead(_class='Account', _attribute='account')
+            raise exception.UnableToRead(class_='Account', attribute='account')
 
         # Get Account of recipient
         recipient = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info[3])
@@ -279,7 +279,7 @@ def get_match(ctx: commands.Context, match_id: int, history: bool = False) -> Un
         # Check if recipient is int, if true return 0
         if isinstance(recipient, int):
             logger.error('recipient is type int')
-            raise exception.UnableToRead(_class='Account', _attribute='account')
+            raise exception.UnableToRead(class_='Account', attribute='account')
 
         # Get Account for winner
         winner = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info[4])
@@ -287,7 +287,7 @@ def get_match(ctx: commands.Context, match_id: int, history: bool = False) -> Un
         # Checks if winner is int, if true return 0
         if isinstance(winner, int):
             logger.error('winner is type int')
-            raise exception.UnableToRead(_class='Account', _attribute='account')
+            raise exception.UnableToRead(class_='Account', attribute='account')
 
         # Create Match with match_info data
         match = Match(match_info[0], match_info[1], True, challenger, recipient, True, winner, match_info[5], True)
@@ -295,7 +295,7 @@ def get_match(ctx: commands.Context, match_id: int, history: bool = False) -> Un
         # Checks if match is type int, if true return 0
         if isinstance(match, int):
             logger.error('match is type int')
-            raise exception.UnableToWrite(_class='Match', _attribute='match')
+            raise exception.UnableToWrite(class_='Match', attribute='match')
 
         # Return match
         return match
@@ -306,7 +306,7 @@ def get_match(ctx: commands.Context, match_id: int, history: bool = False) -> Un
         # Checks if challenger is int, if true return 0
         if isinstance(challenger, int):
             logger.error('challenger is type int')
-            raise exception.UnableToRead(_class='Account', _attribute='account')
+            raise exception.UnableToRead(class_='Account', attribute='account')
 
         # Get Account of recipient
         recipient = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info[4])
@@ -314,14 +314,14 @@ def get_match(ctx: commands.Context, match_id: int, history: bool = False) -> Un
         # Check if recipient is int, if true return 0
         if isinstance(recipient, int):
             logger.error('recipient is type int')
-            raise exception.UnableToRead(_class='Account', _attribute='account')
+            raise exception.UnableToRead(class_='Account', attribute='account')
         # Create match with match_info data
         match = Match(match_info[0], match_info[1], match_info[2], challenger, recipient, match_info[5])
 
         # Checks if match is type int, if true return 0
         if isinstance(match, int):
             logger.error('match is type int')
-            raise exception.UnableToWrite(_class='Match', _attribute='match')
+            raise exception.UnableToWrite(class_='Match', attribute='match')
 
         # Return match
         return match

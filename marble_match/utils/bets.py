@@ -42,7 +42,7 @@ class Bet:
             self._amount = amount
         else:
             logger.error('Unable to update amount')
-            raise exception.UnableToWrite(_class='Bet', _attribute='amount', _value=amount)
+            raise exception.UnableToWrite(class_='Bet', attribute='amount', value=amount)
 
     @property
     def bet_target(self) -> account.Account:
@@ -57,7 +57,7 @@ class Bet:
             self._bet_target = bet_target
         else:
             logger.error('Unable to write bet_target')
-            raise exception.UnableToWrite(_class='Bet', _attribute='bet_target')
+            raise exception.UnableToWrite(class_='Bet', attribute='bet_target')
 
     @property
     def winner(self) -> account.Account:
@@ -74,8 +74,8 @@ class Bet:
             self._winner = winner
         else:
             logger.error(f'Attempted to change winner to invalid Account: {self}')
-            raise exception.UnexpectedValue(_class='Bet', _attribute='winner', _value=winner,
-                                            _expected_values=[self.match.challenger, self.match.recipient])
+            raise exception.UnexpectedValue(class_='Bet', attribute='winner', value=winner,
+                                            expected_values=[self.match.challenger, self.match.recipient])
 
     @property
     def is_history(self) -> bool:
@@ -111,8 +111,8 @@ class Bet:
         # Check if needed fields are not None
         if self._winner is None or self._bet_time is None or self._is_history is None:
             logger.error('missing needed field')
-            raise exception.UnableToWrite(message='Unable to write missing needed fields', _class='Bet',
-                                          _attribute='winner, bet_time, is_history')
+            raise exception.UnableToWrite(message='Unable to write missing needed fields', class_='Bet',
+                                          attribute='winner, bet_time, is_history')
 
         # Check if create_bet_history was successful, return true if it was
         if database_operation.create_bet_history(DbHandler.db_cnc, self.id, self._amount, self.match.id,
@@ -121,11 +121,11 @@ class Bet:
             # Delete bet from table, raise exception if unable to write
             if not database_operation.delete_bet(DbHandler.db_cnc, self.id):
                 logger.error(f'Unable to delete bet({self.id}) from bets')
-                raise exception.UnableToDelete(_attribute='bets')
+                raise exception.UnableToDelete(attribute='bets')
             return True
         else:
             logger.error(f'Unable to write bet({self.id}) to bet_history')
-            raise exception.UnableToWrite(_attribute='bet_history')
+            raise exception.UnableToWrite(attribute='bet_history')
 
 
 def get_bet_all(ctx: commands.Context, user: account.Account, user2: account.Account = None,
@@ -160,19 +160,19 @@ def get_bet_all(ctx: commands.Context, user: account.Account, user2: account.Acc
         logger.debug(f'bettor: {bettor}')
         if not bettor:
             logger.error('Unable to get bettor account')
-            raise exception.UnableToRead(_class='Account', _attribute='account')
+            raise exception.UnableToRead(class_='Account', attribute='account')
         # Get bet_target and check if valid
         bet_target = account.get_account_from_db(ctx, DbHandler.db_cnc, bet[4])
         logger.debug(f'bet_target: {bet_target}')
         if not bet_target:
             logger.error('Unable to get bet_target account')
-            raise exception.UnableToRead(_class='Account', _attribute='account')
+            raise exception.UnableToRead(class_='Account', attribute='account')
         # Get match and check if valid
         match = matches.get_match(ctx, bet[2], history)
         logger.debug(f'match: {match}')
         if not match:
             logger.error('Unable to get match')
-            raise exception.UnableToRead(_class='Match', _attribute='match')
+            raise exception.UnableToRead(class_='Match', attribute='match')
 
         # Create match depending on if history is true or not
         if history:
@@ -183,7 +183,7 @@ def get_bet_all(ctx: commands.Context, user: account.Account, user2: account.Acc
             logger.debug(f'winner: {winner}')
             if not winner:
                 logger.error('Unable to get winner account')
-                raise exception.UnableToRead(_class='Account', _attribute='account')
+                raise exception.UnableToRead(class_='Account', attribute='account')
 
             append_bet = Bet(bet[0], bet[1], match, bettor, bet_target, winner, bet[6], True)
         else:
@@ -218,14 +218,14 @@ def create_bet(ctx: commands.Context, bet_id: int, amount: int, match: matches.M
     # Check if bet_id is valid (Non zero)
     if not bet_id:
         logger.error('Unable to create bet')
-        raise exception.UnableToWrite(_class='Bet', _attribute='bet')
+        raise exception.UnableToWrite(class_='Bet', attribute='bet')
 
     # Create bet from bet_id if bet_id is valid
     bet = get_bet(ctx, bet_id)
     logger.debug(f'bet: {bet}')
     if not bet:
         logger.error('Unable to create bet')
-        raise exception.UnableToRead(_class='Bet', _attribute='bet')
+        raise exception.UnableToRead(class_='Bet', attribute='bet')
 
     return bet
 
@@ -266,21 +266,21 @@ def get_bet(ctx: commands.Context, bet_id: int, history: bool = False) -> Union[
     logger.debug(f'match: {match}')
     if not match:
         logger.error('match is zero')
-        raise exception.UnableToRead(_class='Match', _attribute='match')
+        raise exception.UnableToRead(class_='Match', attribute='match')
 
     # Get bettor from bet_info and validate
     bettor = account.get_account_from_db(ctx, DbHandler.db_cnc, bet_info[3])
     logger.debug(f'bettor: {bettor}')
     if not bettor:
         logger.error('bettor is zero')
-        raise exception.UnableToRead(_class='Account', _attribute='account')
+        raise exception.UnableToRead(class_='Account', attribute='account')
 
     # Get bet_target from bet_info and validate
     bet_target = account.get_account_from_db(ctx, DbHandler.db_cnc, bet_info[4])
     logger.debug(f'bet_target: {bet_target}')
     if not bet_target:
         logger.error('bet_target is zero')
-        raise exception.UnableToRead(_class='Account', _attribute='account')
+        raise exception.UnableToRead(class_='Account', attribute='account')
 
     # Check history to get data specific to history matches
     if history:
@@ -291,7 +291,7 @@ def get_bet(ctx: commands.Context, bet_id: int, history: bool = False) -> Union[
         logger.debug(f'winner: {winner}')
         if not winner:
             logger.error('winner is zero')
-            raise exception.UnableToRead(_class='Account', _attribute='account')
+            raise exception.UnableToRead(class_='Account', attribute='account')
 
         # Create Bet with bet_info data
         bet = Bet(bet_info[0], bet_info[1], match, bettor, bet_target, winner, bet_info[6])

@@ -1,81 +1,134 @@
-
-class Error(Exception):
-    """Base class for other exceptions"""
-    pass
+import discord
+import discord.ext.commands as commands
 
 
-class DiscordDM(Error):
-    """Raised when channel is a dm, when expected not to be"""
-    def __init__(self, message='Action unable to be done in dm'):
+class DiscordDM(commands.CommandError):
+    """Raised when channel is a dm, when expected not to be
+
+    **Attributes**
+
+    - `message` - Main message to print
+
+    """
+    def __init__(self, message='Action unable to be done in dm', *args, **kwargs):
         self.message = message
-        super().__init__(self.message)
-
-
-class UnableToWrite(Error):
-    """Raised when unable to write to database"""
-    def __init__(self, message='Unable to write to database', _class=None, _attribute='', _value=None):
-        self.message = message
-        self._class = _class
-        self._attribute = _attribute
-        self._value = _value
         super().__init__(self.message)
 
     def __str__(self):
-        return f'{self.message}: {self._class}.{self._attribute} ({self._value})'
+        print(self)
 
 
-class UnableToRead(Error):
-    """Raised when unable to read from database"""
-    def __init__(self, message='Unable to read from database', _class=None, _attribute='', _value=None):
+class UnableToWrite(commands.CommandError):
+    """Raised when unable to write to database
+
+    **Attributes**
+
+    - `message` Main message to display
+    - `class_` Class where exception occurred
+    - `attribute` Attribute that exception occurred on
+    - `value` Value during exception
+
+    """
+    def __init__(self, message='Unable to write to database', class_=None, attribute='', value=None, *args, **kwargs):
         self.message = message
-        self._class = _class
-        self._attribute = _attribute
-        self._value = _value
+        self.class_ = class_
+        self.attribute = attribute
+        self.value = value
         super().__init__(self.message)
 
     def __str__(self):
-        return f'{self.message}: {self._class}.{self._attribute} ({self._value})'
+        return f'{self.message}: {self.class_}.{self.attribute} ({self.value})'
 
 
-class UnableToDelete(Error):
-    """Raised when unable to delete row from table"""
-    def __init__(self, message='Unable to delete from database', _class=None, _attribute='', _value=None):
+class UnableToRead(commands.CommandError):
+    """Raised when unable to read from database
+
+   **Attributes**
+
+    - `message` Main message to display
+    - `class_` Class where exception occurred
+    - `attribute` Attribute that exception occurred on
+    - `value` Value during exception
+
+    """
+    def __init__(self, message='Unable to read from database', class_=None, attribute='', value=None, *args, **kwargs):
         self.message = message
-        self._class = _class
-        self._attribute = _attribute
-        self._value = _value
+        self.class_ = class_
+        self.attribute = attribute
+        self.value = value
         super().__init__(self.message)
 
     def __str__(self):
-        return f'{self.message}: {self._class}.{self._attribute} ({self._value})'
+        return f'{self.message}: {self.class_}.{self.attribute} ({self.value})'
 
 
-class UnexpectedEmpty(Error):
-    """Raised when a value should've been gotten but was empty"""
+class UnableToDelete(commands.CommandError):
+    """Raised when unable to delete row from table
 
-    def __init__(self, message='Unexpected empty value', _class=None, _attribute='', _value=None):
+    **Attributes**
+
+    - `message` Main message to display
+    - `class_` Class where exception occurred
+    - `attribute` Attribute that exception occurred on
+    - `value` Value during exception
+
+    """
+    def __init__(self, message='Unable to delete from database', class_=None, attribute='', value=None, *args, **kwargs):
         self.message = message
-        self._class = _class
-        self._attribute = _attribute
-        self._value = _value
+        self.class_ = class_
+        self.attribute = attribute
+        self.value = value
         super().__init__(self.message)
 
     def __str__(self):
-        return f'{self.message}: {self._class}.{self._attribute} ({self._value})'
+        return f'{self.message}: {self.class_}.{self.attribute} ({self.value})'
 
 
-class UnexpectedValue(Error):
-    """Raised when a value should've been gotten but was empty"""
+class UnexpectedEmpty(commands.CommandError):
+    """Raised when a value should've been gotten but was empty
 
-    def __init__(self, message='Unexpected value for attribute', _class=None, _attribute='', _value=None,
-                 _expected_values=None):
+    **Attributes**
 
+    - `message` Main message to display
+    - `class_` Class where exception occurred
+    - `attribute` Attribute that exception occurred on
+    - `value` Value during exception
+
+    """
+
+    def __init__(self, message='Unexpected empty value', class_=None, attribute='', value=None, *args, **kwargs):
         self.message = message
-        self._class = _class
-        self._attribute = _attribute
-        self._value = _value
-        self._expected_values = _expected_values
+        self.class_ = class_
+        self.attribute = attribute
+        self.value = value
         super().__init__(self.message)
 
     def __str__(self):
-        return f'{self.message}: {self._class}.{self._attribute} ({self._value}) -> ({self._expected_values})'
+        return f'{self.message}: {self.class_}.{self.attribute} ({self.value})'
+
+
+class UnexpectedValue(commands.CommandError):
+    """Raised when a value should've been gotten but was empty
+
+    **Attributes**
+
+    - `message` Main message to display
+    - `class_` Class where exception occurred
+    - `attribute` Attribute that exception occurred on
+    - `value` Value that caused exception
+    - `expected_values` Values expected
+
+    """
+
+    def __init__(self, message='Unexpected value for attribute', class_=None, attribute='', value=None,
+                 expected_values=None, *args, **kwargs):
+
+        self.message = message
+        self.class_ = class_
+        self.attribute = attribute
+        self.value = value
+        self.expected_values = expected_values
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f'{self.message}: {self.class_}.{self.attribute} ({self.value}) -> ({self.expected_values})'
