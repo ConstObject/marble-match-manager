@@ -1,5 +1,7 @@
+import asyncio
 import datetime
 import logging
+from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
@@ -10,6 +12,7 @@ import utils.discord_utils as du
 import utils.account as acc
 import utils.matches as ma
 import utils.exception as exception
+import utils.config.json_config as json_cfg
 
 logger = logging.getLogger('marble_match.match')
 
@@ -161,7 +164,7 @@ class MatchCog(commands.Cog, name='Matches'):
             return
 
         # Check if user accepting is participant2
-        if player.id == match.recipient.id:
+        if player.id != match.recipient.id:
             logger.debug(f'{ctx.author} tried to accept a match they aren\'t the recipient of')
             await du.code_message(ctx, 'You\'re not the recipient of a match')
             return
@@ -475,6 +478,138 @@ class MatchCog(commands.Cog, name='Matches'):
 
         database_operation.delete_bet_by_match_id(DbHandler.db_cnc, match_id)
         await du.code_message(ctx, f'Closed match {match_id}.')
+
+    @close_current_match.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+
+    # Function to send error message to user
+    @staticmethod
+    async def send_error(ctx, hardcoded_time, member):
+        difference = hardcoded_time - datetime.utcnow()
+        seconds = difference.seconds
+        hours = seconds // 3600
+        if not hours:
+            minutes = seconds // 60
+            await du.code_message(ctx, f"{member.display_name} already used this command today, "
+                                       f"must wait {minutes} minutes until server refresh")
+        else:
+            await du.code_message(ctx, f"{member.display_name} already used this command today, "
+                                       f"must wait {hours} hours until server refresh")
+
+    @commands.command(name='friendly', help="Use when you're playing a friendly to earn a marble")
+    @commands.guild_only()
+    async def friendlies(self, ctx: commands.Context, member: discord.Member):
+        logger.debug(f'friendlies: {member}')
+
+        # Check if member == ctx.author
+        if member == ctx.author:
+            await du.code_message(ctx, 'No self friendlies', 3)
+            return
+
+        # Function to check if reaction and user
+        def check_member(reaction, user):
+            return user == member and str(reaction.emoji) == '\U00002705'   # ✅️
+
+        # Set needed variables
+        active = True
+        now = datetime.utcnow()
+        hardcoded_time = datetime(now.year, now.month, now.day, 4, 0, 0, 0)
+
+        # Get player id's and validate
+        player1_id = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
+        if not player1_id:
+            logger.error('No player1_id found')
+            await du.code_message(ctx, 'Unable to get player info', 3)
+        player2_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
+        if not player2_id:
+            logger.error('No player1_id found')
+            await du.code_message(ctx, 'Unable to get player info', 3)
+
+        # Get players last used time
+        player1_last_used = json_cfg.read_last_used(player1_id)
+        player2_last_used = json_cfg.read_last_used(player2_id)
+
+        # Check if both players have access to the command
+        if not player1_last_used or player1_last_used < hardcoded_time:
+            if not player2_last_used or player2_last_used < hardcoded_time:
+                pass
+            else:
+                await self.send_error(ctx, hardcoded_time, member)
+                return
+        else:
+            await self.send_error(ctx, hardcoded_time, ctx.author)
+            return
+
+        # Get players accounts
+        player1_account = acc.get_account_from_db(ctx, DbHandler.db_cnc, player1_id)
+        player2_account = acc.get_account_from_db(ctx, DbHandler.db_cnc, player2_id)
+
+        # Send message to have users react to
+        message = await du.code_message(ctx, f'Please react to this message with ✅ to accept the friendly')
+        # Add reaction to message
+        await message.add_reaction('\U00002705')
+
+        while active:
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check_member)
+                if str(reaction) == '\U00002705':
+                    player1_account.marbles += 1
+                    json_cfg.update_last_used(player1_id)
+                    player2_account.marbles += 1
+                    json_cfg.update_last_used(player2_id)
+                    await du.code_message(ctx, f"We've added a marble to your accounts for playing friendlies today.\n"
+                                               f"{player1_account.member.display_name}: {player1_account.marbles}\n"
+                                               f"{player2_account.member.display_name}: {player2_account.marbles}")
+                    raise asyncio.TimeoutError
+            except asyncio.TimeoutError:
+                # When 'reaction_add' gets a timeout, set active to false to end loop
+                active = False
+                # Get cached message to remove all reactions
+                cached_msg = discord.utils.get(self.bot.cached_messages, id=message.id)
+                for reactions in cached_msg.reactions:
+                    await reactions.remove(self.bot.user)
+
+        """
+        # Get last used time of command
+        last_used = json_cfg.read_last_used(player1_id)
+        print(last_used.date())
+        print(datetime.utcnow().date())
+
+        # Check if is zero and last_used is less than now - 24
+        if not last_used or last_used < hardcoded_time:
+            # Run command
+            player = acc.get_account_from_db(ctx, DbHandler.db_cnc, player1_id)
+            player.marbles += 1
+            json_cfg.update_last_used(player1_id)
+            await du.code_message(ctx, f"We've added a marble to your account for playing friendlies today.\n"
+                                       f"New marble amount: {player.marbles}")
+        else:
+            difference = hardcoded_time - datetime.utcnow()
+            seconds = difference.seconds
+            hours = seconds // 3600
+            if not hours:
+                minutes = seconds // 60
+                await du.code_message(ctx, f"You've already used this command today, "
+                                           f"you must wait {minutes} minutes until server refresh")
+            else:
+                await du.code_message(ctx, f"You've already used this command today, you must wait {hours} hours until "
+                                           f"server refresh")
+        """
 
     @close_current_match.error
     async def generic_error(self, ctx, error):

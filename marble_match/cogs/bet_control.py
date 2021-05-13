@@ -1,9 +1,17 @@
+import logging
+
 import discord
 from discord.ext import commands
 
 import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.discord_utils as du
+import utils.account as acc
+import utils.matches as ma
+import utils.bets as bets
+import utils.exception as exceptions
+
+logger = logging.getLogger(f'marble_match.{__name__}')
 
 
 class BetCog(commands.Cog, name='Bets'):

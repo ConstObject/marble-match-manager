@@ -7,12 +7,12 @@ import pytz
 import discord
 from discord.ext import commands
 
-import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.discord_utils as du
 import utils.account as acc
 import utils.matches as ma
 import utils.bets as bets
+import utils.exception as exception
 
 logger = logging.getLogger(f'marble_match.{__name__}')
 
@@ -100,7 +100,7 @@ class HistoryCog(commands.Cog, name='History'):
         # Get player_id and match history for player_id
         player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
         player1 = acc.get_account_from_db(ctx, DbHandler.db_cnc, player_id)
-        match_history = ma.get_matches_all(ctx, player1, player2, True)  # database_operation.get_match_history_info_all(DbHandler.db_cnc, player_id)
+        match_history = ma.get_matches_all(ctx, player1, player2, True)
 
         # Check if match_history is not 0
         if not match_history:
@@ -191,6 +191,24 @@ class HistoryCog(commands.Cog, name='History'):
                 for reactions in cached_msg.reactions:
                     await reactions.remove(self.bot.user)
 
+    @match_history.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+
     @commands.command(name='bet_history', help='Prints out a users bet history')
     @commands.guild_only()
     async def bet_history(self, ctx, member: discord.Member = None, bet_target: discord.Member = None):
@@ -222,7 +240,7 @@ class HistoryCog(commands.Cog, name='History'):
         # Get bettor info and bet_history
         better_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
         bettor = acc.get_account_from_db(ctx, DbHandler.db_cnc, better_id)
-        bet_history = bets.get_bet_all(ctx, bettor, bet_target_acc, True)  # database_operation.get_bet_history_info_all(DbHandler.db_cnc, better_id)
+        bet_history = bets.get_bet_all(ctx, bettor, bet_target_acc, True)
 
         # Check if bet_history is filled
         if not bet_history:
@@ -305,6 +323,24 @@ class HistoryCog(commands.Cog, name='History'):
                 cached_msg = discord.utils.get(self.bot.cached_messages, id=message.id)
                 for reactions in cached_msg.reactions:
                     await reactions.remove(self.bot.user)
+
+    @bet_history.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
 
 def setup(bot):
