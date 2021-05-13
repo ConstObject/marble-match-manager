@@ -102,6 +102,19 @@ class Bet:
         logger.debug(f'bet_time: {time}')
         self._bet_time = time
 
+    def delete_bet(self) -> bool:
+        """Deletes bet
+        """
+        logger.debug(f'delete_bet: {self}')
+
+        # Check if delete was successful
+        if database_operation.delete_bet(DbHandler.db_cnc, self.id):
+            logger.debug('Deleted bet')
+            return True
+        else:
+            logger.error('Unable to delete bet')
+            raise exception.UnableToDelete(class_='Bet', attribute='bet')
+
     def create_history(self) -> bool:
         """Creates a instance of bet in bet_history in database
 

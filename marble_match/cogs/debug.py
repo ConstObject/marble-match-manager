@@ -20,22 +20,14 @@ class DebugCog(commands.Cog, name='Debug'):
 
     @commands.command(name='test')
     @commands.guild_only()
-    async def test(self, ctx):
-        alist = accounts.get_account_server_all(ctx, DbHandler.db_cnc, ctx.guild.id)
-
-        alist2 = sorted(alist, key=operator.attrgetter('winrate'), reverse=True)
-
-        for acc in alist2:
-            print(f'{acc.winrate:.2f}')
-            x = operator.attrgetter('wins')(acc)
-            print(f'x: {x}')
+    async def test(self, ctx: commands.Context):
+        await ctx.send(f'$friendly {ctx.author.mention}')
 
     @commands.command(name='create_bet_debug')
     @commands.guild_only()
     async def create_bet_debug(self, ctx: commands.Context, amount: int, bettor: discord.Member,
                                bet_target: discord.Member, is_history: bool = False, winner: discord.Member = None,
                                id_range_start: int = 0, id_range_end: int = 0):
-
         bettor_id = du.get_id_by_member(ctx, DbHandler.db_cnc, bettor)
         bet_target_id = du.get_id_by_member(ctx, DbHandler.db_cnc, bet_target)
         if winner:
@@ -61,7 +53,7 @@ class DebugCog(commands.Cog, name='Debug'):
         x = 0
         while x < count:
             matches.create_match(ctx, None, amount, accounts.get_account(ctx, DbHandler.db_cnc, challenger),
-                                 accounts.get_account(ctx, DbHandler.db_cnc, recipient), accepted)
+                                 accounts.get_account(ctx, DbHandler.db_cnc, recipient), active, accepted)
             x += 1
 
 
