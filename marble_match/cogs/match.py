@@ -13,7 +13,6 @@ import utils.discord_utils as du
 import utils.account as acc
 import utils.matches as ma
 import utils.exception as exception
-import utils.config.json_config as json_cfg
 
 logger = logging.getLogger('marble_match.match')
 
@@ -190,7 +189,7 @@ class MatchCog(commands.Cog, name='Matches'):
     async def generic_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('match')
+            await ctx.send_help('accept')
         elif isinstance(error, commands.CheckFailure):
             await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
         elif isinstance(error, exception.UnableToRead):
@@ -259,7 +258,7 @@ class MatchCog(commands.Cog, name='Matches'):
     async def generic_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('match')
+            await ctx.send_help('start')
         elif isinstance(error, commands.CheckFailure):
             await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
         elif isinstance(error, exception.UnableToRead):
@@ -355,7 +354,7 @@ class MatchCog(commands.Cog, name='Matches'):
     async def generic_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('match')
+            await ctx.send_help('winner')
         elif isinstance(error, commands.CheckFailure):
             await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
         elif isinstance(error, exception.UnableToRead):
@@ -413,7 +412,7 @@ class MatchCog(commands.Cog, name='Matches'):
     async def generic_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('match')
+            await ctx.send_help('current')
         elif isinstance(error, commands.CheckFailure):
             await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
         elif isinstance(error, exception.UnableToRead):
@@ -495,7 +494,7 @@ class MatchCog(commands.Cog, name='Matches'):
     async def generic_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('match')
+            await ctx.send_help('close')
         elif isinstance(error, commands.CheckFailure):
             await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
         elif isinstance(error, exception.UnableToRead):
@@ -597,7 +596,7 @@ class MatchCog(commands.Cog, name='Matches'):
     async def generic_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('match')
+            await ctx.send_help('friendly')
         elif isinstance(error, commands.CheckFailure):
             await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
         elif isinstance(error, exception.UnableToRead):

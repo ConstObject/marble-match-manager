@@ -18,14 +18,6 @@ class DebugCog(commands.Cog, name='Debug'):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='nick')
-    @commands.guild_only()
-    async def nick(self, ctx: commands.Context, nickname: str):
-        nick_edit = accounts.get_account(ctx, DbHandler.db_cnc, ctx.author)
-        nick_edit.nickname = nickname
-
-        await ctx.send(f'{nick_edit.nickname}:{nickname}')
-
     @commands.command(name='test')
     @commands.guild_only()
     async def test(self, ctx: commands.Context):

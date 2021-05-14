@@ -197,7 +197,7 @@ class HistoryCog(commands.Cog, name='History'):
     async def generic_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('match')
+            await ctx.send_help('match_history')
         elif isinstance(error, commands.CheckFailure):
             await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
         elif isinstance(error, exception.UnableToRead):
@@ -331,7 +331,7 @@ class HistoryCog(commands.Cog, name='History'):
     async def generic_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('match')
+            await ctx.send_help('bet_history')
         elif isinstance(error, commands.CheckFailure):
             await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
         elif isinstance(error, exception.UnableToRead):
