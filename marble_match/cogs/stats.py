@@ -1,10 +1,10 @@
 import logging
 import operator
+from typing import Union
 
 import discord
 from discord.ext import commands
 
-import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.discord_utils as du
 import utils.account as acc
@@ -23,7 +23,7 @@ class StatsCog(commands.Cog, name='Stats'):
 
     @commands.command(name='wins', aliases=['loses', 'winrate'], help='Prints a players wins')
     @commands.guild_only()
-    async def wins(self, ctx: commands.Context, member: discord.Member = None):
+    async def wins(self, ctx: commands.Context, member: Union[discord.Member, str] = None):
         """Prints a users wins, loses, and winrate
 
         Examples:
@@ -40,14 +40,9 @@ class StatsCog(commands.Cog, name='Stats'):
 
         # Check if member is None, use ctx.author if None
         if member is None:
-            player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
-            name = ctx.author.display_name
+            account = acc.get_account(ctx, DbHandler.db_cnc, ctx.author)
         else:
-            player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
-            name = member.display_name
-
-        # Get player Account
-        account = acc.get_account_from_db(ctx, DbHandler.db_cnc, player_id)
+            account = acc.get_account(ctx, DbHandler.db_cnc, member)
         logger.debug(f'account: {account}')
 
         # Set winrate to 0 if wins is zero, otherwise calculate winrate
@@ -56,7 +51,7 @@ class StatsCog(commands.Cog, name='Stats'):
         else:
             player_winrate = 100 * (account.wins / (account.wins + account.loses))
 
-        await du.code_message(ctx, f'{account.member.display_name}\n'
+        await du.code_message(ctx, f'{account.nickname}\n'
                                    f'Wins: {account.wins}'
                                    f'\nLoses: {account.loses}'
                                    f'\nWinrate: {player_winrate:.2f}%')
@@ -78,6 +73,8 @@ class StatsCog(commands.Cog, name='Stats'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='list_stats', help='Lists of stats you can search by')
     @commands.guild_only()
@@ -91,7 +88,7 @@ class StatsCog(commands.Cog, name='Stats'):
     @commands.command(name='leaderboard',
                       help='Will list top 10 players by winrate, or give position of member on leaderboard')
     @commands.guild_only()
-    async def leaderboard(self, ctx: commands.Context, stat: str, members: discord.Member = None):
+    async def leaderboard(self, ctx: commands.Context, stat: str, members: Union[discord.Member, str] = None):
         """Lists top 10 players by winrate, or a specific users position on leaderboard
 
         Examples:
@@ -108,6 +105,9 @@ class StatsCog(commands.Cog, name='Stats'):
         """
         logger.debug(f'leaderboard: {members}')
 
+        # Get member account
+        member_account = acc.get_account(ctx, DbHandler.db_cnc, members)
+
         # Get accounts of all users on server
         player_info = acc.get_account_server_all(ctx, DbHandler.db_cnc, ctx.guild.id)
 
@@ -120,8 +120,8 @@ class StatsCog(commands.Cog, name='Stats'):
 
         if members is not None:
             for player in players:
-                if player.member == members:
-                    await du.code_message(ctx, f'{members.display_name} is rank #{players.index(player) + 1}, '
+                if player.id == member_account.id:
+                    await du.code_message(ctx, f'{member_account.nickname} is rank #{players.index(player) + 1}, '
                                                f'with a win-rate of {player.winrate:.2f}%')
                     return
             return
@@ -130,9 +130,9 @@ class StatsCog(commands.Cog, name='Stats'):
 
         for player in players[0:10]:
             if stat == 'winrate':
-                text += f'#{players.index(player)} {player.member.display_name}: {stat_get(player):.2f}%\n'
+                text += f'#{players.index(player)} {player.nickname}: {stat_get(player):.2f}%\n'
             else:
-                text += f'#{players.index(player)} {player.member.display_name}: {stat_get(player)}\n'
+                text += f'#{players.index(player)} {player.nickname}: {stat_get(player)}\n'
 
         await du.code_message(ctx, text)
 
@@ -153,6 +153,8 @@ class StatsCog(commands.Cog, name='Stats'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
 
 def setup(bot):

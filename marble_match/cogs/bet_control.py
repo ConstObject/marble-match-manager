@@ -1,4 +1,5 @@
 import logging
+from typing import Union
 
 import discord
 from discord.ext import commands
@@ -21,7 +22,7 @@ class BetCog(commands.Cog, name='Bets'):
 
     @commands.command(name='bet', help='Place a bet on a match, updates bets, if marbles is 0 it will delete your bet')
     @commands.guild_only()
-    async def bet(self, ctx, bet_target: discord.Member, match_id: int, marbles: int):
+    async def bet(self, ctx: commands.Context, bet_target: Union[discord.Member, str], match_id: int, marbles: int):
         """Places a bet on a active and not started match
 
         Example:
@@ -41,14 +42,9 @@ class BetCog(commands.Cog, name='Bets'):
             await du.code_message(ctx, 'Marbles cannot be negative')
             return
 
-        # Get winner id and better id
-        bet_target_id = du.get_id_by_member(ctx, DbHandler.db_cnc, bet_target)
-        bettor_id = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
-        logger.debug(f'bet_target_id: {bet_target_id}, bettor_id: {bettor_id}')
-
         # Get bettor/bet_target_id accounts
-        bettor_acc = acc.get_account_from_db(ctx, DbHandler.db_cnc, bettor_id)
-        bet_target_acc = acc.get_account_from_db(ctx, DbHandler.db_cnc, bet_target_id)
+        bettor_acc = acc.get_account(ctx, DbHandler.db_cnc, ctx.author)
+        bet_target_acc = acc.get_account(ctx, DbHandler.db_cnc, bet_target)
         logger.debug(f'bettor: {bettor_acc}, bet_target: {bet_target_acc}')
 
         # Check if marble count for bettor is greater than marbles
@@ -74,17 +70,17 @@ class BetCog(commands.Cog, name='Bets'):
             return
 
         # Check to make sure person placing bet is not in the match
-        if match_info.challenger == bettor_id or match_info.recipient == bettor_id:
+        if match_info.challenger == bettor_acc or match_info.recipient == bettor_acc:
             await du.code_message(ctx, 'You cannot bet on matches you are in')
 
         # Check to make sure bet_target_id is in match
-        if match_info.challenger.id != bet_target_id:
-            if match_info.recipient.id != bet_target_id:
+        if match_info.challenger.id != bet_target_acc.id:
+            if match_info.recipient.id != bet_target_acc.id:
                 await du.code_message(ctx, 'Player is not in this match')
                 return
 
         # Get bet_id if exists,
-        bet_id = database_operation.find_bet(DbHandler.db_cnc, match_id, bettor_id)
+        bet_id = database_operation.find_bet(DbHandler.db_cnc, match_id, bettor_acc.id)
 
         # If bet exists, and marbles is zero delete bet
         if bet_id != 0:
@@ -134,6 +130,8 @@ class BetCog(commands.Cog, name='Bets'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
 
 def setup(bot):

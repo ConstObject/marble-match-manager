@@ -24,6 +24,8 @@ class Match:
     _accepted: bool
     _winner: acc.Account = field(default=None)
     _match_time: datetime.datetime = field(default=None)
+    _game: str = field(default='melee')
+    _format: str = field(default='Bo3')
     _is_history: bool = field(default=False)
 
     @property
@@ -100,11 +102,24 @@ class Match:
         logger.debug(f'match_time_setter: {time}')
         self._match_time = time
 
+    @property
+    def game(self) -> str:
+        return self._game
+
+    @property
+    def format_(self) -> str:
+        return self._format
+
+    @property
+    def full_game(self) -> str:
+        return f'{self._game}[{self._format}]'
+
     def create_history(self) -> bool:
         logger.debug(f'match.create_History: {self}')
         # Check if create_match_history was successful, return True if it was
         if database_operation.create_match_history(DbHandler.db_cnc, self.id, self.amount, self.challenger.id,
-                                                   self.recipient.id, self._winner.id, self._match_time):
+                                                   self.recipient.id, self._winner.id, self._match_time,
+                                                   self._game, self._format):
             logger.debug('Wrote match to match_history')
             # Delete match from table, raise exception if unable to write
             if not database_operation.delete_match(DbHandler.db_cnc, self.id):
@@ -118,12 +133,13 @@ class Match:
 
 
 def create_match(ctx, match_id: int, amount: int, challenger: acc.Account, recipient: acc.Account,
-                 active: bool = False, accepted: bool = False) -> Union[Match, int]:
+                 active: bool = False, accepted: bool = False,
+                 game: str = 'melee', format: str = 'Bo3') -> Union[Match, int]:
     logger.debug(f'match.create_match: {match_id}, {amount}, {challenger}, {recipient}, {active}, {accepted}')
 
     # Assuming match_id is None, refill match_id with results of create_match, if zero write was unsuccessful
-    match_id = database_operation.create_match(DbHandler.db_cnc, match_id, amount, int(active),
-                                               challenger.id, recipient.id)
+    match_id = database_operation.create_match(DbHandler.db_cnc, match_id, amount, challenger.id, recipient.id, active,
+                                               accepted, game, format)
     logger.debug(f'match_id: {match_id}')
 
     # Check if match_id is valid (Non zero)
@@ -213,10 +229,12 @@ def get_matches_all(ctx, user: acc.Account, user2: acc.Account = None, history: 
             if not winner:
                 logger.error('Unable to get winner account')
                 raise exception.UnableToRead(class_='Account', attribute='account')
-            append_match = Match(match[0], match[1], True, challenger, recipient, True, winner, match[5], True)
+            append_match = Match(match[0], match[1], True, challenger, recipient, True, winner,
+                                 match[5], match[6], match[7], True)
 
         else:
-            append_match = Match(match[0], match[1], match[2], challenger, recipient, match[5])
+            append_match = Match(match[0], match[1], match[2], challenger, recipient, match[5],
+                                 _game=match[6], _format=match[7])
 
         logger.debug(f'append_match: {append_match}')
         if isinstance(append_match, Match):
@@ -290,7 +308,8 @@ def get_match(ctx: commands.Context, match_id: int, history: bool = False) -> Un
             raise exception.UnableToRead(class_='Account', attribute='account')
 
         # Create Match with match_info data
-        match = Match(match_info[0], match_info[1], True, challenger, recipient, True, winner, match_info[5], True)
+        match = Match(match_info[0], match_info[1], True, challenger, recipient, True, winner, match_info[5],
+                      match_info[6], match_info[7], True)
         logger.debug(f'match: {match}')
         # Checks if match is type int, if true return 0
         if isinstance(match, int):
@@ -316,7 +335,8 @@ def get_match(ctx: commands.Context, match_id: int, history: bool = False) -> Un
             logger.error('recipient is type int')
             raise exception.UnableToRead(class_='Account', attribute='account')
         # Create match with match_info data
-        match = Match(match_info[0], match_info[1], match_info[2], challenger, recipient, match_info[5])
+        match = Match(match_info[0], match_info[1], match_info[2], challenger, recipient, match_info[5],
+                      _game=match_info[6], _format=match_info[7])
 
         # Checks if match is type int, if true return 0
         if isinstance(match, int):

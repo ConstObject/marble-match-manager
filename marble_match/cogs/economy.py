@@ -1,3 +1,6 @@
+import logging
+from typing import Union
+
 import discord
 from discord.ext import commands
 import numpy as np
@@ -5,7 +8,10 @@ import numpy as np
 import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.discord_utils as du
+import utils.account as acc
 import utils.exception as exception
+
+logger = logging.getLogger(f'marble_match.{__name__}')
 
 
 class EconCog(commands.Cog, name='Marbles'):
@@ -19,7 +25,7 @@ class EconCog(commands.Cog, name='Marbles'):
     @commands.command(name='set_marbles', help='Will set the users marble count to a new number')
     @commands.guild_only()
     @commands.has_role('Admin')
-    async def set_marbles(self, ctx: commands.Context, member: discord.Member, marbles: int):
+    async def set_marbles(self, ctx: commands.Context, member: Union[discord.Member, str], marbles: int):
         """Sets a users marbles to a specified amount
 
         Examples:
@@ -33,14 +39,17 @@ class EconCog(commands.Cog, name='Marbles'):
         - `<marbles>` Amount to set users.
 
         """
+        logger.debug(f'set_marbles: {member}, {marbles}')
+
+        account = acc.get_account(ctx, DbHandler.db_cnc, member)
 
         if marbles < 0:
             await du.code_message(ctx, 'You cannot set a users marbles to any negative number')
             return
 
-        database_operation.update_marble_count(DbHandler.db_cnc,
-                                               du.get_id_by_member(ctx, DbHandler.db_cnc, member), marbles)
-        await du.code_message(ctx, f'Set {member.display_name}\'s marbles to {str(marbles)}')
+        account.marbles = marbles
+
+        await du.code_message(ctx, f'Set {account.nickname}\'s marbles to {account.marbles}')
 
     @set_marbles.error
     async def generic_error(self, ctx, error):
@@ -59,11 +68,13 @@ class EconCog(commands.Cog, name='Marbles'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='add_marbles', help='Will add to the users marble bank')
     @commands.guild_only()
     @commands.has_role('Admin')
-    async def add_marbles(self, ctx: commands.Context, member: discord.Member, marbles: int):
+    async def add_marbles(self, ctx: commands.Context, member: Union[discord.Member, str], marbles: int):
         """Add marbles to a users bank
 
         Examples:
@@ -77,18 +88,18 @@ class EconCog(commands.Cog, name='Marbles'):
         - `<marbles>` Amount to add to users bank.
 
         """
+        logger.debug(f'add_marbles: {member}, {marbles}')
 
         if marbles < 1:
             await du.code_message(ctx, 'You cannot add non positive numbers to a users marble bank')
             return
 
-        player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
+        account = acc.get_account(ctx, DbHandler.db_cnc, member)
 
-        database_operation.add_marbles(DbHandler.db_cnc, player_id, marbles)
+        account.marbles += marbles
 
-        balance = database_operation.get_marble_count(DbHandler.db_cnc, player_id)
-        await du.code_message(ctx, f'{ctx.author.display_name} has added {marbles} to {member.display_name}\'s bank.'
-                                   f'\nTheir new balance is {balance}!')
+        await du.code_message(ctx, f'Added {marbles} to {account.nickname}\'s bank.'
+                                   f'\nTheir new balance is {account.marbles}!')
 
     @add_marbles.error
     async def generic_error(self, ctx, error):
@@ -107,11 +118,13 @@ class EconCog(commands.Cog, name='Marbles'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='subtract_marbles', help='Will subtract from the users marble bank')
     @commands.guild_only()
     @commands.has_role('Admin')
-    async def sub_marbles(self, ctx: commands.Context, member: discord.Member, marbles: int):
+    async def sub_marbles(self, ctx: commands.Context, member: Union[discord.Member, str], marbles: int):
         """Subtracts marbles from a users bank
 
         Examples:
@@ -125,19 +138,19 @@ class EconCog(commands.Cog, name='Marbles'):
         - `<marbles>` Amount of marbles to subtract.
 
         """
+        logger.debug(f'subtract_marbles: {member}, {marbles}')
 
         if marbles < 1:
             await du.code_message(ctx, 'You cannot subtract non positive numbers to a users marble bank')
             return
 
-        player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
+        account = acc.get_account(ctx, DbHandler.db_cnc, member)
 
-        database_operation.subtract_marbles(DbHandler.db_cnc, player_id, marbles)
+        account.marbles -= marbles
 
-        balance = database_operation.get_marble_count(DbHandler.db_cnc, player_id)
-        await du.code_message(ctx, f'{ctx.author.display_name} has removed {marbles} from '
-                                   f'{member.display_name}\'s bank.'
-                                   f'\nTheir new balance is {balance}!')
+        await du.code_message(ctx, f'Removed {marbles} from '
+                                   f'{account.nickname}\'s bank.'
+                                   f'\nTheir new balance is {account.marbles}!')
 
     @sub_marbles.error
     async def generic_error(self, ctx, error):
@@ -156,10 +169,12 @@ class EconCog(commands.Cog, name='Marbles'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='marbles', help='Prints their marble count')
     @commands.guild_only()
-    async def balance(self, ctx: commands.Context, member: discord.Member = None):
+    async def balance(self, ctx: commands.Context, member: Union[discord.Member, str] = None):
         """Prints a users marble balance
 
         Examples:
@@ -172,19 +187,16 @@ class EconCog(commands.Cog, name='Marbles'):
         - `<member>` The member who's marble count you want to see. If omitted defaults to your own marbles.
 
         """
+        logger.debug(f'marbles: {member}')
 
         if member is None:
-            player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
-            await du.code_message(ctx,
-                                  f'You have '
-                                  f'{database_operation.get_marble_count(DbHandler.db_cnc, player_id)} '
-                                  f'marbles.')
+            account = acc.get_account(ctx, DbHandler.db_cnc, ctx.author)
         else:
-            player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
-            await du.code_message(ctx,
-                                  f'They have '
-                                  f'{database_operation.get_marble_count(DbHandler.db_cnc, player_id)} '
-                                  f'marbles.')
+            account = acc.get_account(ctx, DbHandler.db_cnc, member)
+
+        logger.debug(f'account: {account}')
+
+        await du.code_message(ctx, f"{account.nickname} has {account.marbles} marbles")
 
     @balance.error
     async def generic_error(self, ctx, error):
@@ -203,10 +215,12 @@ class EconCog(commands.Cog, name='Marbles'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='transfer', help='Transfers marbles from your bank to theirs')
     @commands.guild_only()
-    async def transfer(self, ctx: commands.Context, member: discord.Member, marbles: int):
+    async def transfer(self, ctx: commands.Context, member: Union[discord.Member, str], marbles: int):
         """Transfers marbles from your bank to another users bank
 
         Examples:
@@ -220,30 +234,31 @@ class EconCog(commands.Cog, name='Marbles'):
         - `<marbles>` Amount to transfer to a user from your bank
 
         """
-
-        if ctx.author == member:
-            await du.code_message(ctx, 'You cannot send marbles to yourself')
-            return
+        logger.debug(f'transfer: {member}, {marbles}')
 
         if marbles < 1:
             await du.code_message(ctx, 'You cannot send non positive amounts of marbles')
             return
 
-        player_id1 = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
-        player_id2 = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
-        player1_marbles = database_operation.get_marble_count(DbHandler.db_cnc, player_id1)
+        author_account = acc.get_account(ctx, DbHandler.db_cnc, ctx.author)
+        target_account = acc.get_account(ctx, DbHandler.db_cnc, member)
+        logger.debug(f'author_account: {author_account}, target_account: {target_account}')
 
-        if player1_marbles < marbles:
+        # Check if author account and member account are not the same
+        if author_account == target_account:
+            await du.code_message(ctx, 'You cannot send marbles to yourself')
+            return
+
+        if author_account.marbles < marbles:
             await du.code_message(ctx, 'You don\'t have enough marbles for this transaction')
             return
 
-        player2_marbles = database_operation.get_marble_count(DbHandler.db_cnc, player_id2)
-
-        database_operation.transfer_marbles(DbHandler.db_cnc, player_id1, player_id2, marbles)
+        author_account.marbles -= marbles
+        target_account.marbles += marbles
 
         await du.code_message(ctx, f'Marbles transferred! Your new balances are:'
-                                   f'\n{ctx.author.display_name}: {str(player1_marbles - marbles)} marbles'
-                                   f'\n{member.display_name}: {str(player2_marbles + marbles)} marbles')
+                                   f'\n{author_account.nickname}: {author_account.marbles} marbles'
+                                   f'\n{target_account.nickname}: {target_account.marbles} marbles')
 
     @transfer.error
     async def generic_error(self, ctx, error):
@@ -262,6 +277,8 @@ class EconCog(commands.Cog, name='Marbles'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='economy', help='Summery of the server economy')
     @commands.guild_only()

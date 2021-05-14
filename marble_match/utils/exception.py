@@ -132,3 +132,11 @@ class UnexpectedValue(commands.CommandError):
 
     def __str__(self):
         return f'{self.message}: {self.class_}.{self.attribute} ({self.value}) -> ({self.expected_values})'
+
+
+class InvalidNickname(commands.CommandError):
+    """Raised when a nickname is invalid"""
+
+    def __init__(self, message='Invalid nickname'):
+        self.message = message
+        super().__init__(self.message)

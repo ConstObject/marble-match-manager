@@ -2,6 +2,7 @@ import asyncio
 import math
 import datetime
 import logging
+from typing import Union
 
 import pytz
 import discord
@@ -41,12 +42,14 @@ class HistoryCog(commands.Cog, name='History'):
         if match.challenger.id == match.winner.id:
             return_text += f'♕'
         # Append challenger display name and vs
-        return_text += f'{match.challenger.member.display_name}\t vs \t'
+        return_text += f'{match.challenger.nickname}\t vs \t'
         # If recipient is winner, append crown
         if match.recipient.id == match.winner.id:
             return_text += f'♕'
         # Append recipient display name
-        return_text += f'{match.recipient.member.display_name}\t'
+        return_text += f'{match.recipient.nickname}\t'
+        # Append game[format]
+        return_text += f'{match.full_game}\t'
         # Append match time
         return_text += f'{self.utc_to_est(match.match_time).strftime("%x %X")}\n'
 
@@ -57,7 +60,7 @@ class HistoryCog(commands.Cog, name='History'):
         # Append bet amount
         return_text += f'{bet.amount}\t'
         # Append bet_target
-        return_text += f'{bet.bet_target.member.display_name}\t'
+        return_text += f'{bet.bet_target.nickname}\t'
         # Append won or lost
         if bet.bet_target.id == bet.winner.id:
             return_text += 'Won\t'
@@ -70,7 +73,8 @@ class HistoryCog(commands.Cog, name='History'):
 
     @commands.command(name='match_history', help='Prints out a users match history')
     @commands.guild_only()
-    async def match_history(self, ctx: commands.Context, member: discord.Member = None, vs: discord.Member = None):
+    async def match_history(self, ctx: commands.Context, member: Union[discord.Member, str] = None,
+                            vs: Union[discord.Member, str] = None):
         """Show match history of user.
 
         Example:
@@ -92,14 +96,12 @@ class HistoryCog(commands.Cog, name='History'):
         # Check if member is None, if it is, set member to ctx.author
         if not member:
             member = ctx.author
-        # Check if vs exists, use vs to get opponent_id
+        # Check if vs exists, get player2 if it does
         if vs:
-            opponent_id = du.get_id_by_member(ctx, DbHandler.db_cnc, vs)
-            player2 = acc.get_account_from_db(ctx, DbHandler.db_cnc, opponent_id)
+            player2 = acc.get_account(ctx, DbHandler.db_cnc, vs)
 
-        # Get player_id and match history for player_id
-        player_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
-        player1 = acc.get_account_from_db(ctx, DbHandler.db_cnc, player_id)
+        # Get player1 and their match history
+        player1 = acc.get_account(ctx, DbHandler.db_cnc, member)
         match_history = ma.get_matches_all(ctx, player1, player2, True)
 
         # Check if match_history is not 0
@@ -208,10 +210,13 @@ class HistoryCog(commands.Cog, name='History'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='bet_history', help='Prints out a users bet history')
     @commands.guild_only()
-    async def bet_history(self, ctx, member: discord.Member = None, bet_target: discord.Member = None):
+    async def bet_history(self, ctx, member: Union[discord.Member, str] = None,
+                          bet_target: Union[discord.Member, str] = None):
         """Prints bet history of user
 
         Examples:
@@ -234,12 +239,10 @@ class HistoryCog(commands.Cog, name='History'):
             member = ctx.author
         # If bet_target is not None, get bet_target info for specific search
         if bet_target:
-            bet_target_id = du.get_id_by_member(ctx, DbHandler.db_cnc, bet_target)
-            bet_target_acc = acc.get_account_from_db(ctx, DbHandler.db_cnc, bet_target_id)
+            bet_target_acc = acc.get_account(ctx, DbHandler.db_cnc, bet_target)
 
         # Get bettor info and bet_history
-        better_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
-        bettor = acc.get_account_from_db(ctx, DbHandler.db_cnc, better_id)
+        bettor = acc.get_account(ctx, DbHandler.db_cnc, member)
         bet_history = bets.get_bet_all(ctx, bettor, bet_target_acc, True)
 
         # Check if bet_history is filled
@@ -341,6 +344,8 @@ class HistoryCog(commands.Cog, name='History'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
 
 def setup(bot):

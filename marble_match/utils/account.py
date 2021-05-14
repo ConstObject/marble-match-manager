@@ -2,6 +2,7 @@ import sqlite3
 import logging
 from typing import Union
 from dataclasses import dataclass
+from datetime import datetime
 
 import discord
 from discord.ext import commands
@@ -18,6 +19,7 @@ logger = logging.getLogger('marble_match.acc')
 class Account:
     id: int
     member: discord.Member
+    _nickname: str
     _marbles: int
     server_id: int
     _wins: int
@@ -29,6 +31,55 @@ class Account:
             return 100 * (self._wins / (self._wins + self._loses))
         else:
             return 0
+
+    @property
+    def friendly_last_used(self) -> Union[datetime, int]:
+        logger.debug(f'friendly_last_used_getter')
+
+        # Try and get value from database
+        try:
+            time = database_operation.get_friendly_last_used(database_setup.DbHandler.db_cnc, self.id)
+            if not time:
+                logger.debug(f'No last_used value')
+                database_operation.create_friendly(database_setup.DbHandler.db_cnc, self.id)
+                return 0
+            else:
+                return time
+        except Exception as e:
+            logger.error(f'Unable to read friendly_last_used: {e}')
+            raise exception.UnableToRead(class_='Account', attribute='friendly_last_used')
+
+    @friendly_last_used.setter
+    def friendly_last_used(self, time: datetime):
+        logger.debug(f'friendly_last_used_setter: {time}')
+        # Try and write to database
+        try:
+            database_operation.update_friendly(database_setup.DbHandler.db_cnc, self.id, time)
+            logger.debug(f'Wrote friendly_last_used: {time}')
+        except Exception as e:
+            logger.error(f'Unable to write friendly_last_used: {e}')
+            raise exception.UnableToWrite(class_='Account', attribute='friendly_last_used')
+
+    @property
+    def nickname(self) -> str:
+        # Check if nickname equals member, if it does return member.display_name
+        if self._nickname == str(self.member):
+            logger.debug(f'nickname is same as member')
+            return self.member.display_name
+        else:
+            return self._nickname
+
+    @nickname.setter
+    def nickname(self, nickname: str):
+        logger.debug(f'nickname_setter: {nickname}')
+
+        # Update nickname in database, check if write was successful then update Account info
+        if database_operation.update_player_nickname(database_setup.DbHandler.db_cnc, self.id, nickname):
+            self._nickname = nickname
+            logger.debug('Updated nickname')
+        else:
+            logger.error('Unable to update nickname')
+            raise exception.UnableToWrite(class_='Account', attribute='nickname', value=nickname)
 
     @property
     def marbles(self) -> int:
@@ -111,17 +162,14 @@ def get_account_from_db(ctx: commands.Context, connection: sqlite3.Connection, p
         logger.error('player_info is empty')
         raise exception.UnexpectedEmpty(attribute='users')
 
-    # split username into name & discriminator
-    user_string = player_info[1].split('#')
     # create and place new Account into acc to return
-    account = Account(player_info[0],
-                      discord.utils.get(ctx.guild.members, name=user_string[0], discriminator=user_string[1]),
-                      player_info[2], player_info[3], player_info[4], player_info[5])
+    account = Account(player_info[0], du.get_member_by_uuid(ctx, player_info[1]), player_info[2], player_info[3],
+                      player_info[4], player_info[5], player_info[6])
     logger.debug(f'acc: {account}')
     return account
 
 
-def get_account(ctx: commands.Context, connection: sqlite3.Connection, member: discord.Member):
+def get_account(ctx: commands.Context, connection: sqlite3.Connection, member: Union[discord.Member, str]):
     """Returns Account of member
 
     **Arguments**
@@ -138,10 +186,16 @@ def get_account(ctx: commands.Context, connection: sqlite3.Connection, member: d
         raise exception.DiscordDM
 
     # Get id from database and put into player_id
-    player_id = database_operation.get_player_id(connection, str(member), ctx.guild.id)
+    if isinstance(member, discord.Member):
+        player_id = database_operation.get_player_id(connection, member.id, ctx.guild.id)
+    else:
+        player_id = database_operation.get_player_id_by_username(connection, member)
+
     # If player_id is 0, no index in database, return 0
     if not player_id:
         logger.error('player_id was not found')
+        if isinstance(member, str):
+            raise exception.InvalidNickname
         raise exception.UnexpectedEmpty(attribute='user')
 
     # Get Account from database
@@ -178,8 +232,8 @@ def get_account_server_all(ctx: commands.Context, connection: sqlite3.Connection
     account_list = []
     for player in player_list:
         logger.debug(f'player: {player}')
-        account_list.append(Account(player[0], du.get_member_by_username(ctx, player[1]), player[2],
-                                    player[3], player[4], player[5]))
+        account_list.append(Account(player[0], du.get_member_by_uuid(ctx, player[1]), player[2],
+                                    player[3], player[4], player[5], player[6]))
 
     # Check if list has been propagated
     if not len(account_list):
@@ -187,3 +241,24 @@ def get_account_server_all(ctx: commands.Context, connection: sqlite3.Connection
         raise exception.UnexpectedEmpty(class_='Account', attribute='account')
 
     return account_list
+
+
+def get_account_by_nick(ctx: commands.Context, nickname: str):
+    """Returns an account from a nickname
+
+    **Arguments**
+
+    - `<ctx>` Context used to get information
+    - `<nickname>` Nickname of users account to get
+
+    """
+    logger.debug(f'get_account_by_nick: {nickname}')
+
+    # Get player_id from nickname, and validate
+    player_id = database_operation.get_player_id_by_username(database_setup.DbHandler.db_cnc, nickname)
+    logger.debug(f'player_id: {player_id}')
+    if not player_id:
+        logger.debug(f'Unable to get player_id for nickname')
+        raise exception.InvalidNickname
+
+    return get_account_from_db(ctx, database_setup.DbHandler.db_cnc, player_id)

@@ -28,13 +28,13 @@ def create_con(path: str):
 
 
 def create_user(connection: sqlite3.Connection, player_id: Union[int, None],
-                username: str, marbles: int, server_id: int,
+                uuid: int, nickname: str, marbles: int, server_id: int,
                 wins: int = 0, loses: int = 0) -> int:
 
-    logger.debug(f'create_user: {player_id}, {username}, {marbles}, {server_id}, {wins}, {loses}')
+    logger.debug(f'create_user: {player_id}, {uuid}, {nickname}, {marbles}, {server_id}, {wins}, {loses}')
 
-    query = "INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)"
-    query_param = [player_id, username, marbles, server_id, wins, loses]
+    query = "INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)"
+    query_param = [player_id, uuid, nickname, marbles, server_id, wins, loses]
 
     try:
         cur = connection.cursor()
@@ -50,13 +50,16 @@ def create_user(connection: sqlite3.Connection, player_id: Union[int, None],
         return 0
 
 
-def create_match(connection: sqlite3.Connection, match_id: Union[int, None], amount: int, active: int,
-                 participant1: int, participant2: int) -> int:
+# TODO Update references to new paramaters
+def create_match(connection: sqlite3.Connection, match_id: Union[int, None], amount: int,
+                 participant1: int, participant2: int, active: int = 0, accepted: int = 0,
+                 game: str = 'melee', format: str = 'Bo3') -> int:
 
-    logger.debug(f'create_match: {match_id}, {amount}, {active}, {participant1}, {participant2}')
+    logger.debug(f'create_match: {match_id}, {amount}, {participant1}, {participant2}, {active}, {accepted},'
+                 f'{game}, {format}')
 
-    query = "INSERT INTO matches VALUES (?, ?, ?, ?, ?, ?)"
-    query_param = [match_id, amount, active, participant1, participant2, 0]
+    query = "INSERT INTO matches VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    query_param = [match_id, amount, active, participant1, participant2, accepted, game, format]
 
     try:
         cur = connection.cursor()
@@ -98,14 +101,17 @@ def create_bet(connection: sqlite3.Connection, bet_id: Union[int, None], amount:
         return 0
 
 
+# TODO Update references with new paramaters
 def create_match_history(connection: sqlite3.Connection, match_id: Union[int, None], amount: int,
                          participant1: int, participant2: int, winner_id: int,
-                         time: datetime.datetime = datetime.datetime.utcnow()) -> int:
+                         time: datetime.datetime = datetime.datetime.utcnow(),
+                         game: str = 'melee', format: str = 'Bo3') -> int:
 
-    logger.debug(f'create_match_history: {match_id}, {amount}, {participant1}, {participant2}, {winner_id}, {time}')
+    logger.debug(f'create_match_history: {match_id}, {amount}, {participant1}, {participant2}, {winner_id}, {time},'
+                 f'{game}, {format}')
 
-    query = "INSERT INTO matches_history VALUES (?, ?, ?, ?, ?, ?)"
-    query_param = [match_id, amount, participant1, participant2, winner_id, time]
+    query = "INSERT INTO matches_history VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    query_param = [match_id, amount, participant1, participant2, winner_id, time, game, format]
 
     try:
         cur = connection.cursor()
@@ -143,6 +149,49 @@ def create_bet_history(connection: sqlite3.Connection, bet_id: Union[int, None],
     except Error as e:
         logger.error(f'There was an error inserting a bet into bet_history: {e}')
         return 0
+
+
+def create_friendly(connection: sqlite3.Connection, player_id: int,
+                    time: datetime.datetime = datetime.datetime.utcnow()):
+
+    logger.debug(f'create_user: {player_id}, {time}')
+
+    query = "INSERT INTO friendly VALUES (?, ?)"
+    query_param = [player_id, time]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        connection.commit()
+
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+
+        return cur.lastrowid
+    except Error as e:
+        logger.error(f'There was an error inserting a friendly into friendly: {e}')
+        return 0
+
+
+def update_friendly(connection: sqlite3.Connection, player_id: int,
+                    time: datetime.datetime = datetime.datetime.utcnow()) -> bool:
+    logger.debug(f'update_friendly: {player_id}, {time}')
+
+    query = "UPDATE friendly SET last_used = ? WHERE id = ?"
+    query_param = [time, player_id]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        connection.commit()
+
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+
+        return True
+    except Error as e:
+        logger.error(f'There was an error updating last_used in friendly: {e}')
+        return False
 
 
 def update_match_activity(connection: sqlite3.Connection, match_id: int, active: int = 1) -> bool:
@@ -208,6 +257,26 @@ def update_marble_count(connection: sqlite3.Connection, player_id: int, marbles:
         return False
 
 
+def update_player_nickname(connection: sqlite3.Connection, player_id: int, nickname: str) -> bool:
+    logger.debug(f'update_player_nickname: {player_id}, {nickname}')
+
+    query = "UPDATE users SET nickname = ? WHERE id = ?"
+    query_param = [nickname, player_id]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        connection.commit()
+
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+
+        return True
+    except Error as e:
+        logger.error(f'There was an error updating wins in user: {e}')
+        return False
+
+
 def update_player_wins(connection: sqlite3.Connection, player_id: int, wins: int) -> bool:
 
     logger.debug(f'update_player_wins: {player_id}, {wins}')
@@ -269,6 +338,31 @@ def update_bet(connection: sqlite3.Connection, bet_id: int, player_id: int, amou
     except Error as e:
         logger.error(f'There was an error updating bet in bets: {e}')
         return False
+
+
+def get_friendly_last_used(connection: sqlite3.Connection, player_id: int) -> Union[datetime.datetime, int]:
+
+    logger.debug(f'get_friendly_last_used: {player_id}')
+
+    query = "SELECT * FROM friendly WHERE id=?"
+    query_param = [player_id]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        results = cur.fetchone()
+
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+        logger.debug(f'results: {results}')
+
+        if results is not None:
+            return results[1]
+        else:
+            return 0
+    except Error as e:
+        logger.error(f'There was an error selecting a match from matches: {e}')
+        return 0
 
 
 def get_match_info_by_id(connection: sqlite3.Connection, match_id: int) -> Union[tuple, int]:
@@ -372,12 +466,37 @@ def get_match_history_info_all(connection: sqlite3.Connection, player_id: int, p
         return 0
 
 
-def get_player_id(connection: sqlite3.Connection, username: str, server_id: int) -> int:
+def get_player_id(connection: sqlite3.Connection, uuid: int, server_id: int) -> int:
 
-    logger.debug(f'get_player_id: {username}, {server_id}')
+    logger.debug(f'get_player_id: {uuid}, {server_id}')
 
-    query = "SELECT * FROM users WHERE username=? AND server_id=?"
-    query_param = [username, server_id]
+    query = "SELECT * FROM users WHERE uuid=? AND server_id=?"
+    query_param = [uuid, server_id]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        results = cur.fetchone()
+
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+        logger.debug(f'results: {results}')
+
+        if results is not None:
+            return results[0]
+        else:
+            return 0
+    except Error as e:
+        logger.error(f'There was an error selecting player_id in users: {e}')
+        return 0
+
+
+def get_player_id_by_username(connection: sqlite3, nickname: str):
+
+    logger.debug(f'get_player_id_by_username: {nickname}')
+
+    query = "SELECT * FROM users WHERE nickname=?"
+    query_param = [nickname]
 
     try:
         cur = connection.cursor()
@@ -476,7 +595,7 @@ def get_marble_count(connection: sqlite3.Connection, player_id: int) -> int:
         logger.debug(f'results: {results}')
 
         if results is not None:
-            return results[2]
+            return results[3]
         else:
             return 0
     except Error as e:

@@ -18,13 +18,27 @@ class DebugCog(commands.Cog, name='Debug'):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.command(name='nick')
+    @commands.guild_only()
+    async def nick(self, ctx: commands.Context, nickname: str):
+        nick_edit = accounts.get_account(ctx, DbHandler.db_cnc, ctx.author)
+        nick_edit.nickname = nickname
+
+        await ctx.send(f'{nick_edit.nickname}:{nickname}')
+
     @commands.command(name='test')
     @commands.guild_only()
-    async def test(self, ctx: commands.Context, member: Union[discord.Member, str]):
-        if isinstance(member, str):
-            print('get Account from str')
+    async def test(self, ctx: commands.Context):
 
-        await ctx.send(f'{member}')
+        player_id = database_operation.get_player_id(DbHandler.db_cnc, ctx.author.id, ctx.guild.id)
+
+        time = database_operation.get_friendly_last_used(DbHandler.db_cnc, player_id)
+        print(time)
+
+        if not time:
+            database_operation.create_friendly(DbHandler.db_cnc, player_id)
+        else:
+            database_operation.update_friendly(DbHandler.db_cnc, player_id)
 
     @commands.command(name='create_bet_debug')
     @commands.guild_only()

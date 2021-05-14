@@ -66,9 +66,37 @@ def get_id_by_member(ctx: commands.Context, connection: sqlite3.Connection, memb
         logger.debug('Ctx channel is dm, get_id_by_member not allowed in dms')
         return 0
 
-    player_id = database_operation.get_player_id(connection, str(member), ctx.guild.id)
+    player_id = database_operation.get_player_id(connection, member.id, ctx.guild.id)
     logger.debug(f'player_id: {player_id}')
     return player_id
+
+
+def get_member_by_uuid(ctx: commands.Context, uuid: int) -> Union[discord.Member, int]:
+    """Returns a discord.Member from a uuid
+
+    **Arguments**
+
+    - `<ctx>` Context used to get server member list
+    - `<uuid>` Unique discord user id to get member for
+
+    """
+    logger.debug(f'get_member_by_uuid: {uuid}')
+
+    # Checks if ctx.channel is dm, before grabbing member list
+    if isinstance(ctx.channel, discord.DMChannel):
+        logger.debug(f'ctx.channel is discord dm: {ctx}')
+        return 0
+
+    # Get member from ctx.guild.members with id
+    member = discord.utils.get(ctx.guild.members, id=uuid)
+    logger.debug(f'member: {member}')
+
+    # Validate member
+    if isinstance(member, discord.Member):
+        logger.debug(f'member is type discord.Member')
+        return member
+
+    return 0
 
 
 def get_member_by_username(ctx: commands.Context, username: str) -> Union[discord.Member, int]:

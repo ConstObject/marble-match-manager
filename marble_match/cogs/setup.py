@@ -34,8 +34,8 @@ class InitCog(commands.Cog, name='Initializations'):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        if not database_operation.get_player_id(DbHandler.db_cnc, str(member), member.guild.id):
-            database_operation.create_user(DbHandler.db_cnc, None, str(member), 10, member.guild.id)
+        if not database_operation.get_player_id(DbHandler.db_cnc, member.id, member.guild.id):
+            database_operation.create_user(DbHandler.db_cnc, None, member.id, str(member), 10, member.guild.id)
             print(f'Added {member.name} to database')
 
     @commands.command(name='init', help='Adds all server members to the database if they do not exist already')
@@ -55,7 +55,7 @@ class InitCog(commands.Cog, name='Initializations'):
 
         for members in ctx.guild.members:
             if not du.get_id_by_member(ctx, DbHandler.db_cnc, members):
-                database_operation.create_user(DbHandler.db_cnc, None, str(members), 10, ctx.guild.id)
+                database_operation.create_user(DbHandler.db_cnc, None, members.id, str(members), 10, ctx.guild.id)
                 print(f'Added {members.name} to database')
         await du.code_message(ctx, 'Any members not added to the database have been added')
 

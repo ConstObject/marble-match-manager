@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging
+from typing import Union
 from datetime import datetime, timedelta
 
 import discord
@@ -27,7 +28,8 @@ class MatchCog(commands.Cog, name='Matches'):
 
     @commands.command(name='match', help='Challenge a user to a marble match, for all the marbles')
     @commands.guild_only()
-    async def match(self, ctx: commands.Context, member: discord.Member, marbles: int):
+    async def match(self, ctx: commands.Context, member: Union[discord.Member, str], marbles: int,
+                    game: str = 'melee', form: str = 'Bo3'):
         """Challenge a user to a marble match
 
         Examples:
@@ -42,13 +44,6 @@ class MatchCog(commands.Cog, name='Matches'):
 
         """
         logging.debug(f'match: {member}, {marbles}')
-
-        # Check if author is member, gives a message to user and returns to exit
-        if ctx.author == member:
-            logger.debug(f'{ctx.author} passed themselves as member in match command')
-            await du.code_message(ctx,
-                                  'You\'re a terrible person who made Soph have to program this.\nNo self matches', 3)
-            return
 
         # Check if marbles is less than one, gives a message to user and returns to exit
         if marbles < 1:
@@ -67,6 +62,12 @@ class MatchCog(commands.Cog, name='Matches'):
         if not recipient:
             logger.debug(f'Unable to get Account for {member}')
             await du.code_message(ctx, f'Unable to get {member.display_name}\'s account info', 3)
+            return
+
+        # Check if challenger and recipient are the same, gives a message to user and returns to exit
+        if challenger.id == recipient.id:
+            logger.debug(f'{ctx.author} passed themselves as member in match command')
+            await du.code_message(ctx, 'You cannot challenge yourself to a match', 3)
             return
 
         # Checks if challenger has a match already going
@@ -93,7 +94,7 @@ class MatchCog(commands.Cog, name='Matches'):
             return
 
         # Creates the match with the players
-        match = ma.create_match(ctx, None, marbles, challenger, recipient) # database_operation.create_match(DbHandler.db_cnc, None, marbles, 0, challenger.id, recipient.id)
+        match = ma.create_match(ctx, None, marbles, challenger, recipient, game=game, format=form)
         logger.debug(f'match: {match}')
         # Checks if match_id is valid, to verify match was created
         if not match:
@@ -104,7 +105,7 @@ class MatchCog(commands.Cog, name='Matches'):
         # Subtracts marbles from challenger
         challenger.marbles -= marbles
 
-        await du.code_message(ctx, f'{ctx.author.display_name} challenged {member.display_name} '
+        await du.code_message(ctx, f'{challenger.nickname} challenged {recipient.nickname} '
                                    f'to a marble match for {marbles} '
                                    f'marbles'
                                    f'\nType \'$accept\' to accept their challenge.'
@@ -128,6 +129,8 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='accept', help='Accept a challenge')
     @commands.guild_only()
@@ -200,6 +203,8 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='start', help='Start the match and close betting')
     @commands.guild_only()
@@ -267,10 +272,12 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='winner', help='Selects the winner of a marble match, and transfers marbles')
     @commands.guild_only()
-    async def match_win(self, ctx: commands.Context, member: discord.Member = None):
+    async def match_win(self, ctx: commands.Context, member: Union[discord.Member, str] = None):
         """Sets the winner of a marble match
 
         Examples:
@@ -299,7 +306,7 @@ class MatchCog(commands.Cog, name='Matches'):
             return
         # Get match info from match_id
         try:
-            match = ma.get_match(ctx, match_id)  # database_operation.get_match_info_by_id(DbHandler.db_cnc, match_id)
+            match = ma.get_match(ctx, match_id)
             logger.debug(f'match: {match}')
         except commands.CommandError as e:
             logger.error(f'Unable to get match: {e}')
@@ -333,15 +340,16 @@ class MatchCog(commands.Cog, name='Matches'):
         # Creates a entry of match in match_history table, deletes from matches
         try:
             match.is_history = True
-            match.match_time = datetime.datetime.utcnow()
+            match.match_time = datetime.utcnow()
             logger.debug('Updated match info')
             match.create_history()
             logger.debug('Created match_history for match')
         except commands.CommandError as e:
             logger.error(f'Unable to create matches_history entry')
             await du.code_message(ctx, f'Failed to add match to history or to delete from matches: {match.id}', 3)
+            return
 
-        await du.code_message(ctx, f'{member.display_name} is the winner, gaining a total of {match.amount} marbles!')
+        await du.code_message(ctx, f'{winner.nickname} is the winner, gaining a total of {match.amount} marbles!')
 
     @accept.error
     async def generic_error(self, ctx, error):
@@ -360,6 +368,8 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='current', help='Lists info about you\'re current match')
     @commands.guild_only()
@@ -395,8 +405,8 @@ class MatchCog(commands.Cog, name='Matches'):
         player_info2 = acc.get_account_from_db(ctx, DbHandler.db_cnc, match_info.recipient.id)  # database_operation.get_player_info(DbHandler.db_cnc, match_info[4])
         logger.debug(f'player_info1: {player_info1}, player_info2: {player_info2}')
 
-        await du.code_message(ctx, f'Match between {player_info1.member.display_name} and '
-                                   f'{player_info2.member.display_name} for {match_info.amount} marbles'
+        await du.code_message(ctx, f'Match between {player_info1.nickname} and '
+                                   f'{player_info2.nickname} for {match_info.amount} marbles'
                                    f'\nMatch ID: {match_info.id}')
 
     @current.error
@@ -416,6 +426,8 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     @commands.command(name='close', help='Closes your pending match, if it has not been started')
     @commands.guild_only()
@@ -472,9 +484,9 @@ class MatchCog(commands.Cog, name='Matches'):
             return
 
         # Refunds players marbles, checks if player2 flag is true to refund player2
-        player1.marbles += match_info[1]
+        player1.marbles += match_info.amount
         if player2_refund:
-            player2.marbles += match_info[1]
+            player2.marbles += match_info.amount
 
         database_operation.delete_bet_by_match_id(DbHandler.db_cnc, match_id)
         await du.code_message(ctx, f'Closed match {match_id}.')
@@ -496,68 +508,66 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
     # Function to send error message to user
     @staticmethod
-    async def send_error(ctx, hardcoded_time, member):
+    async def send_error(ctx, hardcoded_time, account):
         difference = hardcoded_time - datetime.utcnow()
         seconds = difference.seconds
         hours = seconds // 3600
         if not hours:
             minutes = seconds // 60
-            await du.code_message(ctx, f"{member.display_name} already used this command today, "
+            await du.code_message(ctx, f"{account.nickname} already used this command today, "
                                        f"must wait {minutes} minutes until server refresh")
         else:
-            await du.code_message(ctx, f"{member.display_name} already used this command today, "
+            await du.code_message(ctx, f"{account.nickname} already used this command today, "
                                        f"must wait {hours} hours until server refresh")
 
     @commands.command(name='friendly', help="Use when you're playing a friendly to earn a marble")
     @commands.guild_only()
-    async def friendlies(self, ctx: commands.Context, member: discord.Member):
+    async def friendlies(self, ctx: commands.Context, member: Union[discord.Member, str]):
         logger.debug(f'friendlies: {member}')
 
-        # Check if member == ctx.author
-        if member == ctx.author:
+        # Get players Accounts
+        player1 = acc.get_account(ctx, DbHandler.db_cnc, ctx.author)
+        if not player1:
+            logger.error('No player1_id found')
+            await du.code_message(ctx, 'Unable to get player info', 3)
+        player2 = acc.get_account(ctx, DbHandler.db_cnc, member)
+        if not player2:
+            logger.error('No player1_id found')
+            await du.code_message(ctx, 'Unable to get player info', 3)
+
+        # Check if player1 is player2
+        if player1.id == player2.id:
             await du.code_message(ctx, 'No self friendlies', 3)
             return
 
         # Function to check if reaction and user
         def check_member(reaction, user):
-            return user == member and str(reaction.emoji) == '\U00002705'   # ✅️
+            return user == player2.member and str(reaction.emoji) == '\U00002705'   # ✅️
 
         # Set needed variables
         active = True
         now = datetime.utcnow()
         hardcoded_time = datetime(now.year, now.month, now.day, 4, 0, 0, 0)
 
-        # Get player id's and validate
-        player1_id = du.get_id_by_member(ctx, DbHandler.db_cnc, ctx.author)
-        if not player1_id:
-            logger.error('No player1_id found')
-            await du.code_message(ctx, 'Unable to get player info', 3)
-        player2_id = du.get_id_by_member(ctx, DbHandler.db_cnc, member)
-        if not player2_id:
-            logger.error('No player1_id found')
-            await du.code_message(ctx, 'Unable to get player info', 3)
-
         # Get players last used time
-        player1_last_used = json_cfg.read_last_used(player1_id)
-        player2_last_used = json_cfg.read_last_used(player2_id)
+        player1_last_used = player1.friendly_last_used
+        player2_last_used = player2.friendly_last_used
 
         # Check if both players have access to the command
         if not player1_last_used or player1_last_used < hardcoded_time:
             if not player2_last_used or player2_last_used < hardcoded_time:
                 pass
             else:
-                await self.send_error(ctx, hardcoded_time, member)
+                await self.send_error(ctx, hardcoded_time, player2)
                 return
         else:
-            await self.send_error(ctx, hardcoded_time, ctx.author)
+            await self.send_error(ctx, hardcoded_time, player1)
             return
-
-        # Get players accounts
-        player1_account = acc.get_account_from_db(ctx, DbHandler.db_cnc, player1_id)
-        player2_account = acc.get_account_from_db(ctx, DbHandler.db_cnc, player2_id)
 
         # Send message to have users react to
         message = await du.code_message(ctx, f'Please react to this message with ✅ to accept the friendly')
@@ -568,14 +578,13 @@ class MatchCog(commands.Cog, name='Matches'):
             try:
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=60, check=check_member)
                 if str(reaction) == '\U00002705':
-                    player1_account.marbles += 1
-                    json_cfg.update_last_used(player1_id)
-                    player2_account.marbles += 1
-                    json_cfg.update_last_used(player2_id)
+                    player1.marbles += 1
+                    player1.friendly_last_used = datetime.utcnow()
+                    player2.marbles += 1
+                    player2.friendly_last_used = datetime.utcnow()
                     await du.code_message(ctx, f"We've added a marble to your accounts for playing friendlies today.\n"
-                                               f"{player1_account.member.display_name}: {player1_account.marbles}\n"
-                                               f"{player2_account.member.display_name}: {player2_account.marbles}")
-                    raise asyncio.TimeoutError
+                                               f"{player1.nickname}: {player1.marbles}\n"
+                                               f"{player2.nickname}: {player2.marbles}")
             except asyncio.TimeoutError:
                 # When 'reaction_add' gets a timeout, set active to false to end loop
                 active = False
@@ -583,33 +592,6 @@ class MatchCog(commands.Cog, name='Matches'):
                 cached_msg = discord.utils.get(self.bot.cached_messages, id=message.id)
                 for reactions in cached_msg.reactions:
                     await reactions.remove(self.bot.user)
-
-        """
-        # Get last used time of command
-        last_used = json_cfg.read_last_used(player1_id)
-        print(last_used.date())
-        print(datetime.utcnow().date())
-
-        # Check if is zero and last_used is less than now - 24
-        if not last_used or last_used < hardcoded_time:
-            # Run command
-            player = acc.get_account_from_db(ctx, DbHandler.db_cnc, player1_id)
-            player.marbles += 1
-            json_cfg.update_last_used(player1_id)
-            await du.code_message(ctx, f"We've added a marble to your account for playing friendlies today.\n"
-                                       f"New marble amount: {player.marbles}")
-        else:
-            difference = hardcoded_time - datetime.utcnow()
-            seconds = difference.seconds
-            hours = seconds // 3600
-            if not hours:
-                minutes = seconds // 60
-                await du.code_message(ctx, f"You've already used this command today, "
-                                           f"you must wait {minutes} minutes until server refresh")
-            else:
-                await du.code_message(ctx, f"You've already used this command today, you must wait {hours} hours until "
-                                           f"server refresh")
-        """
 
     @close_current_match.error
     async def generic_error(self, ctx, error):
@@ -628,6 +610,8 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+        elif isinstance(error, exception.InvalidNickname):
+            await du.code_message(ctx, error.message, 3)
 
 
 def setup(bot):
