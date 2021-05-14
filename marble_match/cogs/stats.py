@@ -8,6 +8,7 @@ import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.discord_utils as du
 import utils.account as acc
+import utils.exception as exception
 
 logger = logging.getLogger(f'marble_match.{__name__}')
 
@@ -56,6 +57,24 @@ class StatsCog(commands.Cog, name='Stats'):
                                    f'Wins: {account.wins}'
                                    f'\nLoses: {account.loses}'
                                    f'\nWinrate: {player_winrate:.2f}%')
+
+    @wins.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
     @commands.command(name='list_stats', help='Lists of stats you can search by')
     @commands.guild_only()
@@ -114,6 +133,23 @@ class StatsCog(commands.Cog, name='Stats'):
 
         await du.code_message(ctx, text)
 
+    @leaderboard.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
 def setup(bot):
     bot.add_cog(StatsCog(bot))

@@ -5,6 +5,7 @@ import numpy as np
 import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.discord_utils as du
+import utils.exception as exception
 
 
 class EconCog(commands.Cog, name='Marbles'):
@@ -41,6 +42,24 @@ class EconCog(commands.Cog, name='Marbles'):
                                                du.get_id_by_member(ctx, DbHandler.db_cnc, member), marbles)
         await du.code_message(ctx, f'Set {member.display_name}\'s marbles to {str(marbles)}')
 
+    @set_marbles.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+
     @commands.command(name='add_marbles', help='Will add to the users marble bank')
     @commands.guild_only()
     @commands.has_role('Admin')
@@ -70,6 +89,24 @@ class EconCog(commands.Cog, name='Marbles'):
         balance = database_operation.get_marble_count(DbHandler.db_cnc, player_id)
         await du.code_message(ctx, f'{ctx.author.display_name} has added {marbles} to {member.display_name}\'s bank.'
                                    f'\nTheir new balance is {balance}!')
+
+    @add_marbles.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
     @commands.command(name='subtract_marbles', help='Will subtract from the users marble bank')
     @commands.guild_only()
@@ -102,6 +139,24 @@ class EconCog(commands.Cog, name='Marbles'):
                                    f'{member.display_name}\'s bank.'
                                    f'\nTheir new balance is {balance}!')
 
+    @sub_marbles.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+
     @commands.command(name='marbles', help='Prints their marble count')
     @commands.guild_only()
     async def balance(self, ctx: commands.Context, member: discord.Member = None):
@@ -130,6 +185,24 @@ class EconCog(commands.Cog, name='Marbles'):
                                   f'They have '
                                   f'{database_operation.get_marble_count(DbHandler.db_cnc, player_id)} '
                                   f'marbles.')
+
+    @balance.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
     @commands.command(name='transfer', help='Transfers marbles from your bank to theirs')
     @commands.guild_only()
@@ -172,6 +245,24 @@ class EconCog(commands.Cog, name='Marbles'):
                                    f'\n{ctx.author.display_name}: {str(player1_marbles - marbles)} marbles'
                                    f'\n{member.display_name}: {str(player2_marbles + marbles)} marbles')
 
+    @transfer.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+
     @commands.command(name='economy', help='Summery of the server economy')
     @commands.guild_only()
     async def summery(self, ctx: commands.Context):
@@ -192,6 +283,24 @@ class EconCog(commands.Cog, name='Marbles'):
             marbles += user[2]
 
         await du.code_message(ctx, f'There are currently {marbles} marbles in circulation')
+
+    @summery.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
     @commands.command(name='summery', help='Prints a more detailed summery of the server economy')
     @commands.guild_only()
@@ -232,6 +341,24 @@ class EconCog(commands.Cog, name='Marbles'):
         await du.code_message(ctx, f'There are currently {sum_marbles} marbles in circulation\n'
                                    f'The current mean marble count is {int(sum_marbles / count)}\n'
                                    f'Inequality index is {gini:.4f}\n')
+
+    @ex_summery.error
+    async def generic_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
+            await ctx.send_help('match')
+        elif isinstance(error, commands.CheckFailure):
+            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
+        elif isinstance(error, exception.UnableToRead):
+            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
+        elif isinstance(error, exception.UnableToWrite):
+            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
+        elif isinstance(error, exception.UnableToDelete):
+            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedEmpty):
+            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
+        elif isinstance(error, exception.UnexpectedValue):
+            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
 
 
 def setup(bot):
