@@ -1,5 +1,5 @@
 import logging
-import operator
+from typing import Union
 
 import discord
 from discord.ext import commands
@@ -20,8 +20,11 @@ class DebugCog(commands.Cog, name='Debug'):
 
     @commands.command(name='test')
     @commands.guild_only()
-    async def test(self, ctx: commands.Context):
-        await ctx.send(f'$friendly {ctx.author.mention}')
+    async def test(self, ctx: commands.Context, member: Union[discord.Member, str]):
+        if isinstance(member, str):
+            print('get Account from str')
+
+        await ctx.send(f'{member}')
 
     @commands.command(name='create_bet_debug')
     @commands.guild_only()

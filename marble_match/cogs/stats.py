@@ -12,6 +12,9 @@ import utils.exception as exception
 
 logger = logging.getLogger(f'marble_match.{__name__}')
 
+account_stats = ['wins', 'loses', 'marbles', 'winrate']
+need_to_add_stats = ['match count', 'bet total', 'bet winrate', 'bet total won']
+
 
 class StatsCog(commands.Cog, name='Stats'):
 
@@ -106,7 +109,7 @@ class StatsCog(commands.Cog, name='Stats'):
         logger.debug(f'leaderboard: {members}')
 
         # Get accounts of all users on server
-        player_info = acc.get_account_server_all(ctx, DbHandler.db_cnc, ctx.guild.id)  # database_operation.get_player_info_all_by_server(DbHandler.db_cnc, ctx.guild.id)
+        player_info = acc.get_account_server_all(ctx, DbHandler.db_cnc, ctx.guild.id)
 
         # Creation function to get stats based on string
         stat_get = operator.attrgetter(stat)
@@ -150,6 +153,7 @@ class StatsCog(commands.Cog, name='Stats'):
             await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
         elif isinstance(error, exception.UnexpectedValue):
             await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
+
 
 def setup(bot):
     bot.add_cog(StatsCog(bot))
