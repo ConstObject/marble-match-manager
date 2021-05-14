@@ -470,7 +470,7 @@ def get_player_id(connection: sqlite3.Connection, uuid: int, server_id: int) -> 
 
     logger.debug(f'get_player_id: {uuid}, {server_id}')
 
-    query = "SELECT * FROM users WHERE id=? AND server_id=?"
+    query = "SELECT * FROM users WHERE uuid=? AND server_id=?"
     query_param = [uuid, server_id]
 
     try:
