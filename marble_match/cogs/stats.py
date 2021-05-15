@@ -86,7 +86,8 @@ class StatsCog(commands.Cog, name='Stats'):
         await du.code_message(ctx, f'You can use any of these stats with leaderboard command:{text}')
 
     @commands.command(name='leaderboard',
-                      help='Will list top 10 players by winrate, or give position of member on leaderboard')
+                      help=f'Will list top 10 players by stat[{", ".join(stat for stat in account_stats)}], '
+                           f'or give position of member on leaderboard')
     @commands.guild_only()
     async def leaderboard(self, ctx: commands.Context, stat: str, members: Union[discord.Member, str] = None):
         """Lists top 10 players by winrate, or a specific users position on leaderboard
@@ -104,9 +105,12 @@ class StatsCog(commands.Cog, name='Stats'):
 
         """
         logger.debug(f'leaderboard: {members}')
+        member_account = None
 
         # Get member account
-        member_account = acc.get_account(ctx, DbHandler.db_cnc, members)
+        if members:
+            member_account = acc.get_account(ctx, DbHandler.db_cnc, members)
+        logger.debug(f'member_account: {member_account}')
 
         # Get accounts of all users on server
         player_info = acc.get_account_server_all(ctx, DbHandler.db_cnc, ctx.guild.id)
@@ -115,14 +119,18 @@ class StatsCog(commands.Cog, name='Stats'):
         stat_get = operator.attrgetter(stat)
 
         players = []
-
         players = sorted(player_info, key=stat_get, reverse=True)
 
         if members is not None:
             for player in players:
                 if player.id == member_account.id:
-                    await du.code_message(ctx, f'{member_account.nickname} is rank #{players.index(player) + 1}, '
-                                               f'with a win-rate of {player.winrate:.2f}%')
+                    if stat == 'winrate':
+                        await du.code_message(ctx, f'{member_account.nickname} is rank #{players.index(player) + 1}, '
+                                                   f'with a win-rate of {stat_get(player):.2f}%')
+                    else:
+                        await du.code_message(ctx, f'{member_account.nickname} is rank #{players.index(player) + 1}, '
+                                                   f'with {stat_get(player)}')
+
                     return
             return
 
@@ -130,9 +138,9 @@ class StatsCog(commands.Cog, name='Stats'):
 
         for player in players[0:10]:
             if stat == 'winrate':
-                text += f'#{players.index(player)} {player.nickname}: {stat_get(player):.2f}%\n'
+                text += f'#{players.index(player) + 1} {player.nickname}: {stat_get(player):.2f}%\n'
             else:
-                text += f'#{players.index(player)} {player.nickname}: {stat_get(player)}\n'
+                text += f'#{players.index(player) + 1} {player.nickname}: {stat_get(player)}\n'
 
         await du.code_message(ctx, text)
 

@@ -12,6 +12,7 @@ from database.database_setup import DbHandler
 import utils.discord_utils as du
 import utils.account as acc
 import utils.matches as ma
+import utils.bets as bets
 import utils.exception as exception
 
 logger = logging.getLogger('marble_match.match')
@@ -333,8 +334,6 @@ class MatchCog(commands.Cog, name='Matches'):
             await du.code_message(ctx, 'Was unable to update player stats please try again', 3)
             return
 
-        # Processes the bets on the match
-        database_operation.process_bets(DbHandler.db_cnc, match_id, winner.id)
         logger.debug('Processed bets')
         # Creates a entry of match in match_history table, deletes from matches
         try:
@@ -343,6 +342,8 @@ class MatchCog(commands.Cog, name='Matches'):
             logger.debug('Updated match info')
             match.create_history()
             logger.debug('Created match_history for match')
+            if bets.process_bets(ctx, match):
+                logger.debug('Processed bets')
         except commands.CommandError as e:
             logger.error(f'Unable to create matches_history entry')
             await du.code_message(ctx, f'Failed to add match to history or to delete from matches: {match.id}', 3)

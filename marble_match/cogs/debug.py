@@ -9,6 +9,7 @@ from database.database_setup import DbHandler
 import utils.discord_utils as du
 import utils.account as accounts
 import utils.matches as matches
+import utils.bets as bets
 
 logger = logging.getLogger(f'marble_match.{__name__}')
 
@@ -21,16 +22,11 @@ class DebugCog(commands.Cog, name='Debug'):
     @commands.command(name='test')
     @commands.guild_only()
     async def test(self, ctx: commands.Context):
-
-        player_id = database_operation.get_player_id(DbHandler.db_cnc, ctx.author.id, ctx.guild.id)
-
-        time = database_operation.get_friendly_last_used(DbHandler.db_cnc, player_id)
-        print(time)
-
-        if not time:
-            database_operation.create_friendly(DbHandler.db_cnc, player_id)
-        else:
-            database_operation.update_friendly(DbHandler.db_cnc, player_id)
+        # Get match
+        match = matches.get_match(ctx, 1, True)
+        # Process bets
+        bets.process_bets(ctx, match)
+        pass
 
     @commands.command(name='create_bet_debug')
     @commands.guild_only()
