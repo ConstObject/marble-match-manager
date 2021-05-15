@@ -72,6 +72,7 @@ class BetCog(commands.Cog, name='Bets'):
         # Check to make sure person placing bet is not in the match
         if match_info.challenger == bettor_acc or match_info.recipient == bettor_acc:
             await du.code_message(ctx, 'You cannot bet on matches you are in')
+            return
 
         # Check to make sure bet_target_id is in match
         if match_info.challenger.id != bet_target_acc.id:
@@ -110,7 +111,8 @@ class BetCog(commands.Cog, name='Bets'):
 
         # Create bet
         bets.create_bet(ctx, None, marbles, match_info, bettor_acc, bet_target_acc)
-
+        # Take marbles
+        bettor_acc.marbles = bettor_acc.marbles - marbles
         await du.code_message(ctx, 'Bet submitted')
 
     @bet.error

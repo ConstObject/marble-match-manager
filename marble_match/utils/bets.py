@@ -115,6 +115,12 @@ class Bet:
             logger.error('Unable to delete bet')
             raise exception.UnableToDelete(class_='Bet', attribute='bet')
 
+    def is_winner(self) -> bool:
+        logger.debug(f'is_winner: {self}')
+
+        # Return if bet_target == winner
+        return self.bet_target == self.winner
+
     def create_history(self) -> bool:
         """Creates a instance of bet in bet_history in database
 
@@ -313,3 +319,110 @@ def get_bet(ctx: commands.Context, bet_id: int, history: bool = False) -> Union[
     logger.debug(f'bet: {bet}')
 
     return bet
+
+
+def process_bets(ctx, match: matches.Match) -> bool:
+    """Processes all the bets for a given match
+    """
+    logger.debug(f'process_bets: {match}')
+
+    # Check if match is a history match
+    if not match.is_history:
+        logger.error(f"Passed a match that isn't history to process_bets")
+        return False
+
+    # Get all bets for match, validate that it's not empty
+    bet_data = database_operation.get_bet_info_match_all(DbHandler.db_cnc, match.id)
+    if not len(bet_data):
+        logger.debug(f"No bets placed on this match")
+        return False
+
+    # Create list of bets to be filled and processed
+    bets = []
+    for bet in bet_data:
+        # Check if bet and match.id are equal
+        if bet[2] == match.id:
+            logger.debug(f'Valid bet({bet[0]})')
+
+        # Get bettor account and bet target account, validate
+        bettor = account.get_account_from_db(ctx, DbHandler.db_cnc, bet[3])
+        bet_target = account.get_account_from_db(ctx, DbHandler.db_cnc, bet[4])
+        if not bettor or not bet_target:
+            logger.error(f'Unable to get accounts from bet')
+            raise exception.UnableToRead(class_='Account', attribute='account')
+
+        # Create bet to append onto bets
+        bet_temp = Bet(bet[0], bet[1], match, bettor, bet_target, match.winner)
+        logger.debug(f'bet_temp: {bet_temp}')
+        if not bet_temp:
+            logger.error(f'Unable to create bet')
+            raise exception.UnableToWrite(class_='Bet', attribute='bet')
+        bets.append(bet_temp)
+
+    # Check if bets has been propagated
+    if not len(bets):
+        logger.error(f'bets was not propagated')
+        return False
+
+    # Total marble count
+    marble_pot = 0
+
+    # Total of loser marbles and losers
+    loser_count = 0
+    loser_pot = 0
+
+    # Total of winner marbles and winners
+    winner_count = 0
+    winner_pot = 0
+
+    # Calculations that need all bets
+    for process_bet in bets:
+        # Check if bet is winner
+        if process_bet.is_winner():
+            # Increment winner count and add bet amount to winner pool
+            winner_count += 1
+            winner_pot += process_bet.amount
+        else:
+            # Increment loser count and add bet amount to loser pool
+            loser_count += 1
+            loser_pot += process_bet.amount
+        # Increment total marbles
+        marble_pot += process_bet.amount
+
+    logger.debug(f'marble_pot: {marble_pot}, '
+                 f'loser: sum({loser_pot}),count({loser_count}), '
+                 f'winner: sum({winner_pot}),count({winner_count})')
+
+    # Calculate winner_pot_ratio and winnings per bet
+    for calculate_bets in bets:
+        if calculate_bets.is_winner():
+            # Ratio of your bet in winner_pot
+            winner_pot_ratio = calculate_bets.amount/winner_pot
+            logger.debug(f'pot_ratio: {winner_pot_ratio}')
+
+            # If loser pot* winner_pot_ratio < 1: return bet amount + one marble
+            if (loser_pot*winner_pot_ratio) < 1:
+                bet_returns = calculate_bets.amount + 1
+            else:
+                bet_returns = calculate_bets.amount + (loser_pot*winner_pot_ratio)
+
+            # If no losers, house matches bet and returns double amount
+            if loser_count == 0:
+                bet_returns = calculate_bets.amount * 2
+
+            logger.debug(f'user: {calculate_bets.bettor.nickname}'
+                         f'winner_pot_ratio: {winner_pot_ratio}'
+                         f'bet_returns: {bet_returns}')
+
+            # Add bet_returns to bettors marbles
+            calculate_bets.bettor.marbles += bet_returns
+
+        # Update calculate_bet to prep for making into history
+        calculate_bets.bet_time = datetime.datetime.utcnow()
+        calculate_bets.is_history = True
+        # Delete bet
+        calculate_bets.delete_bet()
+        # Make bet history
+        calculate_bets.create_history()
+
+    return True

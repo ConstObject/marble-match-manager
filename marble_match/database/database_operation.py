@@ -361,7 +361,7 @@ def get_friendly_last_used(connection: sqlite3.Connection, player_id: int) -> Un
         else:
             return 0
     except Error as e:
-        logger.error(f'There was an error selecting a match from matches: {e}')
+        logger.error(f'There was an error selecting a friendly from friendly: {e}')
         return 0
 
 
@@ -886,47 +886,3 @@ def is_bet_win(connection: sqlite3.Connection, bet_id: int, winner_id: int) -> b
         return True
     else:
         return False
-
-
-def process_bets(connection: sqlite3.Connection, match_id: int, winner_id: int):
-
-    logger.debug(f'process_bets: {match_id}, {winner_id}')
-    bets = get_bet_info_match_all(connection, match_id)
-
-    logger.debug(f'bets: {bets}')
-    marble_pot = 0
-    loser_pot = 0
-    winner_count = 0
-    loser_count = 0
-    winner_pot = 0
-
-    if bets == 0:
-        logger.debug(f'No bets to process')
-        return
-
-    for x in bets:
-        if is_bet_win(connection, x[0], winner_id):
-            winner_count += 1
-            winner_pot += x[1]
-        else:
-            subtract_marbles(connection, x[3], x[1])
-            loser_count += 1
-            loser_pot += x[1]
-            delete_bet(connection, x[0])
-        marble_pot += x[1]
-
-    bets = get_bet_info_match_all(connection, match_id)
-
-    for x in bets:
-        if is_bet_win(connection, x[0], winner_id):
-            winner_pot_ratio = x[1]/winner_pot
-            if (loser_pot*winner_pot_ratio) < 1:
-                winnings = x[1]+1
-            else:
-                winnings = int(x[1] + (loser_pot*winner_pot_ratio))
-            if loser_count < 1:
-                winnings = x[1]*2
-            logger.debug(f'Winnings: {winnings}')
-            add_marbles(connection, x[3], winnings)
-            create_bet_history(connection, x[0], x[1], x[2], x[3], x[4], winner_id, datetime.datetime.utcnow())
-            delete_bet(connection, x[0])
