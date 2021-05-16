@@ -27,6 +27,25 @@ def create_con(path: str):
         raise e
 
 
+def raw_query(connection: sqlite3.Connection, query: str, query_param: list):
+
+    logger.debug(f'raw_query: {query}, {query_param}')
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        connection.commit()
+
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+
+        return cur.fetchall()
+    except Error as e:
+        logger.error(f'There was an error running query({query}): {e}')
+        return 0
+
+
+
 def create_user(connection: sqlite3.Connection, player_id: Union[int, None],
                 uuid: int, nickname: str, marbles: int, server_id: int,
                 wins: int = 0, loses: int = 0) -> int:
