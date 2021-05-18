@@ -1,5 +1,4 @@
 from PIL import Image
-from imgur_python import Imgur
 
 
 def get_concat_h(im1, im2):
