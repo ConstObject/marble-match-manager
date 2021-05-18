@@ -6,3 +6,4 @@ import cogs.information
 import cogs.match
 import cogs.setup
 import cogs.stats
+import cogs.services

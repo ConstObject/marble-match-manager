@@ -14,6 +14,7 @@ import utils.account as acc
 import utils.matches as ma
 import utils.bets as bets
 import utils.exception as exception
+import utils.images as image
 
 logger = logging.getLogger('marble_match.match')
 
@@ -44,6 +45,7 @@ class MatchCog(commands.Cog, name='Matches'):
 
         """
         logging.debug(f'match: {member}, {marbles}')
+        active = True
 
         # Check if marbles is less than one, gives a message to user and returns to exit
         if marbles < 1:
@@ -105,12 +107,79 @@ class MatchCog(commands.Cog, name='Matches'):
         # Subtracts marbles from challenger
         challenger.marbles -= marbles
 
-        await du.code_message(ctx, f'{challenger.nickname} challenged {recipient.nickname} '
-                                   f'to a marble match for {marbles} '
-                                   f'marbles'
-                                   f'\nType \'$accept\' to accept their challenge.'
-                                   f'\nType \'$close\' to decline the challenge.'
-                                   f'\nMatch ID: {match.id}')
+        # Setup embed
+        user1 = self.bot.get_user(challenger.member.id)
+        user2 = self.bot.get_user(recipient.member.id)
+        user1_avi: discord.asset.Asset = user1.avatar_url_as(format='png', size=128)
+        user2_avi: discord.asset.Asset = user2.avatar_url_as(format='png', size=128)
+        await user1_avi.save(f'{user1.id}.png')
+        await user2_avi.save(f'{user2.id}.png')
+
+        image_file = image.create_image(f'{user1.id}', f'{user2.id}')
+
+        embed = discord.Embed(title='Marble Match', description='')
+        embed.set_footer(text=f'Match ID: {match.id}', icon_url=self.bot.user.avatar_url)
+
+        embed.add_field(name=f'{challenger.nickname} vs {recipient.nickname}',
+                        value=f'Marbles {match.amount}', inline=True)
+        embed.add_field(name=f'Status', value='Unaccepted', inline=True)
+        file = discord.File(image_file, filename=image_file)
+        embed.set_image(url=f'attachment://{image_file}')
+        embed.colour = discord.colour.Color.orange()
+
+        message = await ctx.send(file=file, embed=embed)
+
+        # Add reactions to message
+        await message.add_reaction('\U00002705')
+        await message.add_reaction('\U0001F19A')
+        await message.add_reaction('\U0000274C')
+
+        # Function to check if reaction and user
+        def check_member(reaction, user):
+            return user == challenger.member or user == recipient.member \
+                   and (str(reaction.emoji) == '\U00002705'
+                        or str(reaction) == '\U0001F19A'
+                        or str(reaction) == '\U0000274C')
+
+        while active:
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=180, check=check_member)
+                # Accept the match.
+                if str(reaction) == '\U00002705' and user.id == recipient.member.id:
+                    match.accepted = True
+                    await reaction.remove(self.bot.user)
+                    embed.colour = discord.colour.Color.gold()
+                    embed.remove_field(1)
+                    embed.add_field(name='Status', value='Accepted', inline=True)
+                    await message.edit(embed=embed)
+                elif str(reaction) == '\U0001F19A':
+                    if match.accepted:
+                        match.active = True
+                        recipient.marbles -= match.amount
+                        await reaction.remove(self.bot.user)
+                        embed.colour = discord.colour.Color.green()
+                        embed.remove_field(1)
+                        embed.add_field(name='Status', value='Started', inline=True)
+                        await message.edit(embed=embed)
+                elif str(reaction) == '\U0000274C':
+                    challenger.marbles += match.amount
+                    if match.active:
+                        recipient.marbles += match.amount
+                    database_operation.delete_match(DbHandler.db_cnc, match.id)
+                    active = False
+                    await reaction.remove(self.bot.user)
+                    embed.colour = discord.colour.Color.red()
+                    embed.remove_field(1)
+                    embed.add_field(name='Status', value='Closed', inline=True)
+                    await message.edit(embed=embed)
+            except asyncio.TimeoutError:
+                # When 'reaction_add' gets a timeout, set active to false to end loop
+                active = False
+
+        # Get cached message to remove all reactions
+        cached_msg = discord.utils.get(self.bot.cached_messages, id=message.id)
+        for reactions in cached_msg.reiactions:
+            await reactions.remove(self.bot.user)
 
     @match.error
     async def generic_error(self, ctx, error):
@@ -585,13 +654,15 @@ class MatchCog(commands.Cog, name='Matches'):
                     await du.code_message(ctx, f"We've added a marble to your accounts for playing friendlies today.\n"
                                                f"{player1.nickname}: {player1.marbles}\n"
                                                f"{player2.nickname}: {player2.marbles}")
+                    await reaction.remove(self.bot.user)
+                    active = False
             except asyncio.TimeoutError:
                 # When 'reaction_add' gets a timeout, set active to false to end loop
                 active = False
-                # Get cached message to remove all reactions
-                cached_msg = discord.utils.get(self.bot.cached_messages, id=message.id)
-                for reactions in cached_msg.reactions:
-                    await reactions.remove(self.bot.user)
+
+        cached_msg = discord.utils.get(self.bot.cached_messages, id=message.id)
+        for reactions in cached_msg.reactions:
+            await reactions.remove(self.bot.user)
 
     @close_current_match.error
     async def generic_error(self, ctx, error):

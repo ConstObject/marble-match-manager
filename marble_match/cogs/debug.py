@@ -1,5 +1,8 @@
 import logging
+import urllib.request
 from typing import Union
+import os
+import sys
 
 import discord
 from discord.ext import commands
@@ -10,6 +13,7 @@ import utils.discord_utils as du
 import utils.account as accounts
 import utils.matches as matches
 import utils.bets as bets
+import utils.images as image
 
 logger = logging.getLogger(f'marble_match.{__name__}')
 
@@ -57,12 +61,32 @@ class DebugCog(commands.Cog, name='Debug', description="Don't mind me unless you
     @commands.command(name='test')
     @commands.check(is_soph)
     @commands.guild_only()
-    async def test(self, ctx: commands.Context):
-        # Get match
-        match = matches.get_match(ctx, 1, True)
-        # Process bets
-        bets.process_bets(ctx, match)
-        pass
+    async def test(self, ctx: commands.Context, member: discord.Member):
+        user1 = self.bot.get_user(ctx.author.id)
+        user2 = self.bot.get_user(member.id)
+        user1_avi: discord.asset.Asset = user1.avatar_url_as(format='png', size=128)
+        user2_avi: discord.asset.Asset = user2.avatar_url_as(format='png', size=128)
+        await user1_avi.save(f'{ctx.author.id}.png')
+        await user2_avi.save(f'{member.id}.png')
+
+        image_file = image.create_image(f'{ctx.author.id}', f'{member.id}')
+
+        embed = discord.Embed(title='Marble Match', description='')
+        embed.set_footer(text='Match ID: 14', icon_url=self.bot.user.avatar_url)
+
+        embed.add_field(name=f'{ctx.author.display_name} vs {member.display_name}', value='Marbles 10', inline=True)
+        embed.add_field(name=f'Status', value='Unaccepted', inline=True)
+        file = discord.File(image_file, filename=image_file)
+        embed.set_image(url=f'attachment://{image_file}')
+
+        embed.remove_field(1)
+        embed.add_field(name=f'Status', value='Accepted', inline=True)
+
+        message = await ctx.send(file=file, embed=embed)
+        await message.add_reaction('\U00002705')
+        await message.add_reaction('\U0001F19A')
+        await message.add_reaction('\U0000274C')
+        print('e')
 
     @commands.command(name='create_bet_debug')
     @commands.check(is_soph)

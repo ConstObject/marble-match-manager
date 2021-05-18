@@ -31,7 +31,7 @@ token = config['DEFAULT']['discord_token']
 db.create_tables(db.DbHandler.db_cnc)
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='$', intents=intents, description='Manages Marble Matches')
+bot = commands.Bot(command_prefix='#', intents=intents, description='Manages Marble Matches')
 
 for extension in extensions_list:
     try:
