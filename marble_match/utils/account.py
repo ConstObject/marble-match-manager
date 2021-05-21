@@ -14,6 +14,8 @@ import utils.exception as exception
 
 logger = logging.getLogger('marble_match.acc')
 
+# TODO Make this thread safe, improve management of exceptions on database calls
+
 
 @dataclass(order=True)
 class Account:

@@ -193,26 +193,6 @@ class HistoryCog(commands.Cog, name='History'):
                 for reactions in cached_msg.reactions:
                     await reactions.remove(self.bot.user)
 
-    @match_history.error
-    async def generic_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('match_history')
-        elif isinstance(error, commands.CheckFailure):
-            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
-        elif isinstance(error, exception.UnableToRead):
-            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
-        elif isinstance(error, exception.UnableToWrite):
-            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
-        elif isinstance(error, exception.UnableToDelete):
-            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
-        elif isinstance(error, exception.UnexpectedEmpty):
-            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
-        elif isinstance(error, exception.UnexpectedValue):
-            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
-        elif isinstance(error, exception.InvalidNickname):
-            await du.code_message(ctx, error.message, 3)
-
     @commands.command(name='bet_history', help='Prints out a users bet history')
     @commands.guild_only()
     async def bet_history(self, ctx, member: Union[discord.Member, str] = None,
@@ -326,26 +306,6 @@ class HistoryCog(commands.Cog, name='History'):
                 cached_msg = discord.utils.get(self.bot.cached_messages, id=message.id)
                 for reactions in cached_msg.reactions:
                     await reactions.remove(self.bot.user)
-
-    @bet_history.error
-    async def generic_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('bet_history')
-        elif isinstance(error, commands.CheckFailure):
-            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
-        elif isinstance(error, exception.UnableToRead):
-            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
-        elif isinstance(error, exception.UnableToWrite):
-            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
-        elif isinstance(error, exception.UnableToDelete):
-            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
-        elif isinstance(error, exception.UnexpectedEmpty):
-            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
-        elif isinstance(error, exception.UnexpectedValue):
-            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
-        elif isinstance(error, exception.InvalidNickname):
-            await du.code_message(ctx, error.message, 3)
 
 
 def setup(bot):

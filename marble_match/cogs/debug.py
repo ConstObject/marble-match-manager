@@ -1,8 +1,4 @@
 import logging
-import urllib.request
-from typing import Union
-import os
-import sys
 
 import discord
 from discord.ext import commands
@@ -39,21 +35,18 @@ class DebugCog(commands.Cog, name='Debug', description="Don't mind me unless you
 
     @commands.command(name='ness_sanity', description="No longer drive her nuts")
     @commands.check(is_soph)
-    @commands.guild_only()
     async def ness_sanity(self, ctx: commands.Context):
         dm_channel = await ctx.author.create_dm()
         await dm_channel.send('database', file=discord.File(r"database.db"))
 
     @commands.command(name='ness_sanity_log', description="No longer drive her nuts")
     @commands.check(is_soph)
-    @commands.guild_only()
     async def ness_sanity_log(self, ctx: commands.Context):
         dm_channel = await ctx.author.create_dm()
         await dm_channel.send('log', file=discord.File(r"log.log"))
 
     @commands.command(name='ness_sanity_ini', description="No longer drive her nuts")
     @commands.check(is_soph)
-    @commands.guild_only()
     async def ness_sanity_ini(self, ctx: commands.Context):
         dm_channel = await ctx.author.create_dm()
         await dm_channel.send('ini', file=discord.File(r"marbles.ini"))
@@ -61,32 +54,11 @@ class DebugCog(commands.Cog, name='Debug', description="Don't mind me unless you
     @commands.command(name='test')
     @commands.check(is_soph)
     @commands.guild_only()
-    async def test(self, ctx: commands.Context, member: discord.Member):
-        user1 = self.bot.get_user(ctx.author.id)
-        user2 = self.bot.get_user(member.id)
-        user1_avi: discord.asset.Asset = user1.avatar_url_as(format='png', size=128)
-        user2_avi: discord.asset.Asset = user2.avatar_url_as(format='png', size=128)
-        await user1_avi.save(f'{ctx.author.id}.png')
-        await user2_avi.save(f'{member.id}.png')
-
-        image_file = image.create_image(f'{ctx.author.id}', f'{member.id}')
-
-        embed = discord.Embed(title='Marble Match', description='')
-        embed.set_footer(text='Match ID: 14', icon_url=self.bot.user.avatar_url)
-
-        embed.add_field(name=f'{ctx.author.display_name} vs {member.display_name}', value='Marbles 10', inline=True)
-        embed.add_field(name=f'Status', value='Unaccepted', inline=True)
-        file = discord.File(image_file, filename=image_file)
-        embed.set_image(url=f'attachment://{image_file}')
-
-        embed.remove_field(1)
-        embed.add_field(name=f'Status', value='Accepted', inline=True)
-
-        message = await ctx.send(file=file, embed=embed)
-        await message.add_reaction('\U00002705')
-        await message.add_reaction('\U0001F19A')
-        await message.add_reaction('\U0000274C')
-        print('e')
+    async def test(self, ctx: commands.Context):
+        roles = await ctx.guild.fetch_roles()
+        print(f'length {len(roles)}\n\n')
+        for role in roles:
+            print(f'{role}: {role.position}\n\n')
 
     @commands.command(name='create_bet_debug')
     @commands.check(is_soph)

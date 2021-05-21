@@ -45,7 +45,6 @@ def raw_query(connection: sqlite3.Connection, query: str, query_param: list):
         return 0
 
 
-
 def create_user(connection: sqlite3.Connection, player_id: Union[int, None],
                 uuid: int, nickname: str, marbles: int, server_id: int,
                 wins: int = 0, loses: int = 0) -> int:

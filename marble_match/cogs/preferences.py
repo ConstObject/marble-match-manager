@@ -1,5 +1,6 @@
 import logging
 from typing import Union
+from configparser import ConfigParser
 
 import discord
 from discord.ext import commands
@@ -37,25 +38,30 @@ class PrefCog(commands.Cog, name='Preferences'):
         account.nickname = nickname
         await ctx.send(f'New nickname: "{account.nickname}"')
 
-    @nick.error
-    async def generic_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('nick')
-        elif isinstance(error, commands.CheckFailure):
-            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
-        elif isinstance(error, exception.UnableToRead):
-            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
-        elif isinstance(error, exception.UnableToWrite):
-            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
-        elif isinstance(error, exception.UnableToDelete):
-            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
-        elif isinstance(error, exception.UnexpectedEmpty):
-            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
-        elif isinstance(error, exception.UnexpectedValue):
-            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
-        elif isinstance(error, exception.InvalidNickname):
-            await du.code_message(ctx, error.message, 3)
+    @commands.command(name='color_role_cost', description='Sets the price of color roles')
+    @commands.has_role('Admin')
+    @commands.guild_only()
+    async def color_role_cost(self, ctx: commands.Context, cost: int):
+        logger.debug(f'color_role_cost: {int}')
+
+        # Check if cost is not zero or negative
+        if cost < 1:
+            logger.debug(f'Tried to set cost to zero or negative')
+            await du.code_message(ctx, 'Cost cannot be zero or negative', 3)
+            return
+
+        # Get ConfigParser to set new value
+        config = ConfigParser()
+        config.read('marble_bot.ini')
+
+        # Set value to new value
+        config.set(str(ctx.guild.id), 'color_role_cost', f'{cost}')
+
+        # Write file
+        with open('marble_bot.ini', 'w') as config_file:
+            config.write(config_file)
+
+        await du.code_message(ctx, f'Cost of colored roles changed to {cost}', 1)
 
 
 def setup(bot):

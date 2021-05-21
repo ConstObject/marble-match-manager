@@ -13,6 +13,8 @@ import utils.exception as exception
 
 logger = logging.getLogger(f'marble_match.{__name__}')
 
+# TODO Make this thread safe, improve management of exceptions on database calls
+
 
 @dataclass(order=True)
 class Match:

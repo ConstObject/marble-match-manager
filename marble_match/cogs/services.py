@@ -1,16 +1,16 @@
+import asyncio
 import logging
+from configparser import ConfigParser
 from typing import Union
 
 import discord
 from discord.ext import commands
 from cogs.debug import is_soph
 
-import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.discord_utils as du
 import utils.account as accounts
-import utils.matches as matches
-import utils.bets as bets
+import utils.exception as exception
 
 logger = logging.getLogger(f'marble_match.{__name__}')
 
@@ -33,7 +33,7 @@ color_role_list = ['Default',
                    'Dark Theme']
 
 
-class ServiceCog(commands.Cog, name='services'):
+class ServiceCog(commands.Cog, name='Services'):
 
     def __init__(self, bot: commands.Bot):
         self.bot: commands.Bot = bot
@@ -105,56 +105,101 @@ class ServiceCog(commands.Cog, name='services'):
 
         await du.code_message(ctx, 'Created color roles!', 1)
 
-    @create_role.error
-    async def create_role_error(self, ctx, error):
-        if isinstance(error, commands.MissingPermissions):
-            print(error)
-
     @commands.command(name='buy', description='Buy services and items with your marbles')
     @commands.guild_only()
-    async def buy(self, ctx: commands.Context, item_group: str, specific_item: str):
+    async def buy(self, ctx: commands.Context, item_group: str, specific_item: Union[discord.Role, str]):
         logger.debug(f'buy: {item_group}, {specific_item}')
+        # Get config to get base costs of some items
+        config = ConfigParser()
+        config.read('marble_bot.ini')
 
         if item_group.lower() == 'color_role':
             logger.debug('Buying a role')
-            if specific_item in color_role_list:
-                logger.debug('Valid role')
-                # Get ctx.author's account to check if they can purchase
-                buyer_account = accounts.get_account(ctx, DbHandler.db_cnc, ctx.author)
-                if buyer_account.marbles < 15:
-                    logger.debug(f"User doesn't have enough marbles")
-                    await du.code_message(ctx, f'You do not have enough marbles for this.\n'
-                                               f'Balance: {buyer_account.marbles}\n'
-                                               f'Cost: 15')
+            if isinstance(specific_item, discord.Role):
+                if specific_item.name in color_role_list:
+                    logger.debug('Valid role')
+                    # Get ctx.author's account to check if they can purchase
+                    buyer_account = accounts.get_account(ctx, DbHandler.db_cnc, ctx.author)
+                    # Getting value of cost for server from ini
+                    color_role_cost = int(config[str(ctx.guild.id)]['color_role_cost'])
+                    if buyer_account.marbles < color_role_cost:
+                        logger.debug(f"User doesn't have enough marbles")
+                        await du.code_message(ctx, f'You do not have enough marbles for this.\n'
+                                                   f'Balance: {buyer_account.marbles}\n'
+                                                   f'Cost: {color_role_cost}')
+                        return
+
+                    # Remove any previous color roles
+                    for role in ctx.author.roles:
+                        if role.name in color_role_list:
+                            logger.debug(f'Removed {role.name} from {ctx.author.display_name}')
+                            await ctx.author.remove_roles(role, reason='Assigning new color role')
+
+                    # Take marbles from buyer
+                    buyer_account.marbles -= color_role_cost
+
+                    # Get role with specified name, and members roles, then append with new role and edit
+                    role = specific_item
+                    member_roles = ctx.author.roles
+                    member_roles.append(role)
+                    await ctx.author.edit(roles=member_roles, reason='Bought a new role')
+
+                    await du.code_message(ctx, 'New Role Set')
+
+                else:
+                    logger.debug(f'Invalid role: {specific_item}')
+                    await du.code_message(ctx, f'Invalid color_role')
                     return
-                guild: discord.Guild = ctx.guild
-                bot_member: discord.Member = ctx.guild.me
-
-                # Remove any previous color roles
-                for role in ctx.author.roles:
-                    if role.name in color_role_list:
-                        logger.debug(f'Removed {role.name} from {ctx.author.display_name}')
-                        await ctx.author.remove_roles(role, reason='Assigning new color role')
-
-                buyer_account.marbles -= 15
-
-                role = discord.utils.get(ctx.guild.roles, name=specific_item)
-                member_roles = ctx.author.roles
-                member_roles.append(role)
-                await ctx.author.edit(roles=member_roles, reason='Bought a new role')
-
-                await du.code_message(ctx, 'New Role Set')
-
             else:
-                logger.debug(f'Invalid role: {specific_item}')
-                await du.code_message(ctx, f'Invalid color_role')
+                await du.code_message(ctx, f'You must pass a discord role here not a string')
+                await ctx.send_help('buy')
                 return
 
-    @buy.error
-    async def create_role_error(self, ctx, error):
-        if isinstance(error, commands.MissingPermissions):
-            logger.debug(f'{error}')
-            print(f'{error}')
+    @commands.command(name='list_color_roles', description='Prints list of color roles')
+    @commands.guild_only()
+    async def list_color_roles(self, ctx: commands.Context):
+        text = '\n'.join(color for color in color_role_list)
+
+        await du.code_message(ctx, f'Colors\n\n{text}')
+
+    @commands.command(name='test_color_role', description='Temporarily test a color role')
+    @commands.guild_only()
+    async def test_color(self, ctx: commands.Context, color_role: discord.Role):
+
+        if color_role.name in color_role_list:
+            logger.debug('Valid role')
+
+            guild: discord.Guild = ctx.guild
+            bot_member: discord.Member = ctx.guild.me
+
+            old_color_role = None
+
+            # Remove any previous color roles, and store in old_color_role
+            for role in ctx.author.roles:
+                if role.name in color_role_list:
+                    old_color_role = role
+                    logger.debug(f'Removed {role.name} from {ctx.author.display_name}')
+                    await ctx.author.remove_roles(role, reason='Assigning new color role')
+
+            # Get members roles, and append color_role
+            member_roles: list[discord.Role] = ctx.author.roles
+            member_roles.append(color_role)
+            await ctx.author.edit(roles=member_roles, reason='Testing a new role')
+
+            await du.code_message(ctx, 'New Role Set, will remove in 20 seconds')
+            await asyncio.sleep(20)
+
+            # Remove temp role, restore old_color_role
+            member_roles.remove(color_role)
+            if old_color_role:
+                member_roles.append(old_color_role)
+            await ctx.author.edit(roles=member_roles, reason='Removed a role they were testing')
+            await du.code_message(ctx, "Removed role, if you'd like to keep it consider purchasing it with $buy")
+
+        else:
+            logger.debug(f'Invalid role: {color_role}')
+            await du.code_message(ctx, f'Invalid color_role')
+            return
 
 
 def setup(bot: commands.Bot):

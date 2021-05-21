@@ -21,9 +21,8 @@ def add_overlay(anything):
     return anything
 
 
-
 def create_image(file1: str, file2: str) -> str:
-    image1 = Image.open(f'{file1}.png')
-    image2 = Image.open(f'{file2}.png')
-    add_overlay(get_concat_h(image1, image2)).save(f'{file1}x{file2}.png')
+    image1 = Image.open(f'imgs/{file1}.png')
+    image2 = Image.open(f'imgs/{file2}.png')
+    add_overlay(get_concat_h(image1, image2)).save(f'imgs/{file1}x{file2}.png')
     return f'{file1}x{file2}.png'

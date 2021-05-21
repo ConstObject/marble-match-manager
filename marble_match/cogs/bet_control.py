@@ -115,26 +115,6 @@ class BetCog(commands.Cog, name='Bets'):
         bettor_acc.marbles = bettor_acc.marbles - marbles
         await du.code_message(ctx, 'Bet submitted')
 
-    @bet.error
-    async def generic_error(self, ctx, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            await du.code_message(ctx, f"You're missing required argument: {error.param.name}", 3)
-            await ctx.send_help('bet')
-        elif isinstance(error, commands.CheckFailure):
-            await du.code_message(ctx, f"You're unable to use this command in a dm.", 3)
-        elif isinstance(error, exception.UnableToRead):
-            await du.code_message(ctx, f'Error reading {error.attribute}', 3)
-        elif isinstance(error, exception.UnableToWrite):
-            await du.code_message(ctx, f"Error writing {error.attribute}", 3)
-        elif isinstance(error, exception.UnableToDelete):
-            await du.code_message(ctx, f"Error deleting {error.attribute}", 3)
-        elif isinstance(error, exception.UnexpectedEmpty):
-            await du.code_message(ctx, f"Error unexpected empty {error.attribute}", 3)
-        elif isinstance(error, exception.UnexpectedValue):
-            await du.code_message(ctx, f"Unexpected value, {error.attribute}", 3)
-        elif isinstance(error, exception.InvalidNickname):
-            await du.code_message(ctx, error.message, 3)
-
 
 def setup(bot):
     bot.add_cog(BetCog(bot))
