@@ -34,7 +34,7 @@ token = config['DEFAULT']['discord_token']
 db.create_tables(db.DbHandler.db_cnc)
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='$', intents=intents, description='Manages Marble Matches')
+bot = commands.Bot(command_prefix='&', intents=intents, description='Manages Marble Matches')
 
 for extension in extensions_list:
     try:
@@ -44,7 +44,7 @@ for extension in extensions_list:
         exc = '{}: {}'.format(type(e).__name__, e)
         print('Failed to load extension {}\n{}'.format(extension, exc))
 
-# schedules.start_scheduler()
+schedules.start_scheduler()
 
 
 def update_ini(server_id: str):
