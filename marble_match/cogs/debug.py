@@ -49,7 +49,7 @@ class DebugCog(commands.Cog, name='Debug', description="Don't mind me unless you
     @commands.check(is_soph)
     async def ness_sanity_ini(self, ctx: commands.Context):
         dm_channel = await ctx.author.create_dm()
-        await dm_channel.send('ini', file=discord.File(r"marbles.ini"))
+        await dm_channel.send('ini', file=discord.File(r"marbles_bot.ini"))
 
     @commands.command(name='test')
     @commands.check(is_soph)
