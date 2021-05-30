@@ -106,6 +106,16 @@ def create_tables(connection):
                     "last_used timestamp, "
                     "FOREIGN KEY(id) REFERENCES users(id))")
 
+        cur.execute("CREATE TABLE IF NOT EXISTS "
+                    "seasons("
+                    "id INTEGER PRIMARY KEY NOT NULL, "
+                    "server_id INTEGER NOT NULL, "
+                    "season INTEGER NOT NULL, "
+                    "player_id INTEGER NOT NULL, "
+                    "marble_change INTEGER NOT NULL, "
+                    "change_time timestamp, "
+                    "FOREIGN KEY(player_id) REFERENCES users(id))")
+
         connection.commit()
     except Error as e:
         logger.error(f'Failed to create tables: {e}')

@@ -17,7 +17,7 @@ logger = logging.getLogger(f'marble_match.{__name__}')
 
 # TODO Add bet_total_won, really complex gotta simulate the process bets again
 account_stats = ['wins', 'loses', 'marbles', 'winrate', 'elo']
-non_account_stats = ['match_count', 'bet_total', 'bet_winrate']
+non_account_stats = ['match_count', 'bet_total', 'bet_winrate', 'season']
 # Returns [[user.id, match_count], ...]
 match_count_query = 'SELECT ' \
                     'users.id, ' \
@@ -51,6 +51,14 @@ bet_winrate_query = 'SELECT ' \
                     'ON users.id == bets.better_id ' \
                     'WHERE users.server_id == ? ' \
                     'GROUP BY users.id'
+# Returns [[seasons.player_id, total_marble_change], ...]
+season_query = "SELECT " \
+               "seasons.player_id, " \
+               "SUM(marble_change) as change_total " \
+               "FROM seasons " \
+               "WHERE seasons.server_id == ? " \
+               "GROUP BY seasons.player_id " \
+               "ORDER BY change_total DESC"
 
 
 class StatsCog(commands.Cog, name='Stats'):
@@ -204,6 +212,31 @@ class StatsCog(commands.Cog, name='Stats'):
                     con_string += f"#{index} {player_account.nickname}: {winrate}\n"
                     page_text_list.append(con_string)
                 logger.debug(f'Exited bet_winrate for loop')
+            elif stat == 'season':
+                # Preform query
+                query_results = db_op.raw_query(DbHandler.db_cnc, season_query, [ctx.guild.id])
+                index = 0
+                # Loop through sorted_list, and append lines to page_text_list for each index
+                for results in query_results:
+                    con_string = ''
+                    index += 1
+                    # If member is supplied only append index if member is in it
+                    if member_account:
+                        if results[0] != member_account.id:
+                            continue
+                        else:
+                            # Build string for command when ran by member
+                            con_string += f"{member_account.nickname}'s rank " \
+                                          f"#{index} in {stat} with {results[1]}"
+                            page_text_list.append(con_string)
+                            continue
+
+                    # Get account of user to use nickname
+                    player_account = acc.get_account_from_db(ctx, DbHandler.db_cnc, results[0])
+                    con_string += f"#{index} {player_account.nickname}: {results[1]}\n"
+                    page_text_list.append(con_string)
+                logger.debug(f'Exited season for loop')
+
         else:
             # Get accounts of all users on server
             player_info = acc.get_account_server_all(ctx, DbHandler.db_cnc, ctx.guild.id)
@@ -221,7 +254,7 @@ class StatsCog(commands.Cog, name='Stats'):
                     if player.id == member_account.id:
                         if stat == 'winrate':
                             con_string = f"{member_account.nickname}'s rank #{players.index(player) + 1}, " \
-                                         f"with a win-rate of {stat_get(player):.2f}%"
+                                         f"with a {stat} of {stat_get(player):.2f}%"
                         else:
                             con_string = f"{member_account.nickname}'s rank " \
                                          f"#{players.index(player) + 1}, with {stat_get(player)}"
@@ -236,7 +269,7 @@ class StatsCog(commands.Cog, name='Stats'):
                 if stat == 'winrate':
                     con_string += f'#{players.index(player) + 1} {player.nickname}: {stat_get(player):.2f}%\n'
                 else:
-                    con_string += f'#{players.index(player) + 1} {player.nickname}: {stat_get(player)}\n'
+                    con_string += f'#{players.index(player) + 1} {player.nickname}: {int(stat_get(player))}\n'
 
                 page_text_list.append(con_string)
 

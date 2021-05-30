@@ -16,6 +16,7 @@ import utils.matches as ma
 import utils.bets as bets
 import utils.exception as exception
 import utils.images as image
+import utils.ranked as ranked
 
 logger = logging.getLogger('marble_match.match')
 
@@ -359,6 +360,20 @@ class MatchCog(commands.Cog, name='Matches'):
             logger.debug('Updated players elo')
             if bets.process_bets(ctx, match):
                 logger.debug('Processed bets')
+
+            # Check if there is a current season
+            if ranked.is_season_active(ctx.guild.id):
+                logger.debug(f'Season is active {ctx.guild.id}')
+                # Get current season
+                current_season = ranked.current_season(ctx.guild.id)
+                logger.debug(f'current_season: {current_season}')
+                # Create season entry for each player
+                database_operation.create_season_entry(DbHandler.db_cnc,
+                                                       ctx.guild.id, current_season, winner.id, match.amount)
+                database_operation.create_season_entry(DbHandler.db_cnc,
+                                                       ctx.guild.id, current_season, loser.id, match.amount * -1)
+                logger.debug('Created season entries')
+
         except commands.CommandError as e:
             logger.error(f'Unable to create matches_history entry')
             await du.code_message(ctx, f'Failed to add match to history or to delete from matches: {match.id}', 3)

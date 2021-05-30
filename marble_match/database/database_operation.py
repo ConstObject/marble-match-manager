@@ -191,6 +191,28 @@ def create_friendly(connection: sqlite3.Connection, player_id: int,
         return 0
 
 
+def create_season_entry(connection: sqlite3.Connection, server_id: int, season: int, player_id: int, marble_change: int,
+                        time: datetime.datetime = datetime.datetime.utcnow()):
+
+    logger.debug(f'create_season_entry: {server_id}, {season}, {player_id}, {marble_change}, {time}')
+
+    query = "INSERT INTO seasons VALUES (?, ?, ?, ?, ?, ?)"
+    query_param = [None, server_id, season, player_id, marble_change, time]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        connection.commit()
+
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+
+        return cur.lastrowid
+    except Error as e:
+        logger.error(f'There was an error inserting a entry into seasons: {e}')
+        return 0
+
+
 def update_friendly(connection: sqlite3.Connection, player_id: int,
                     time: datetime.datetime = datetime.datetime.utcnow()) -> bool:
     logger.debug(f'update_friendly: {player_id}, {time}')
