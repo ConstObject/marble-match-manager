@@ -53,6 +53,7 @@ def update_ini(server_id: str):
         config.set(server_id, 'default_marbles', '10')
         config.set(server_id, 'tracked_stats', '')
         config.set(server_id, 'color_role_cost', '20')
+        config.set(server_id, 'season', '0')
 
     with open('marble_bot.ini', 'w') as config_file:
         config.write(config_file)
