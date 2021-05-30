@@ -16,7 +16,7 @@ import utils.exception as exception
 logger = logging.getLogger(f'marble_match.{__name__}')
 
 # TODO Add bet_total_won, really complex gotta simulate the process bets again
-account_stats = ['wins', 'loses', 'marbles', 'winrate']
+account_stats = ['wins', 'loses', 'marbles', 'winrate', 'elo']
 non_account_stats = ['match_count', 'bet_total', 'bet_winrate']
 # Returns [[user.id, match_count], ...]
 match_count_query = 'SELECT ' \
@@ -265,10 +265,12 @@ class StatsCog(commands.Cog, name='Stats'):
         if pages > 1:
             await message.add_reaction('\U00002B05')
             await message.add_reaction('\U000027A1')
+        else:
+            active = False
 
-            # Function to check if reaction = ctx.author
-            def check(reaction, user):
-                return user == ctx.author and str(reaction.emoji) in ['\U00002B05', '\U000027A1']
+        # Function to check if reaction = ctx.author
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ['\U00002B05', '\U000027A1']
 
         # loop for reaction controls
         while active:

@@ -26,6 +26,7 @@ class Account:
     server_id: int
     _wins: int
     _loses: int
+    _elo: float
 
     @property
     def winrate(self) -> float:
@@ -143,6 +144,22 @@ class Account:
             logger.error('Unable to update loses')
             raise exception.UnableToWrite(class_='Account', attribute='loses', value=amount)
 
+    @property
+    def elo(self) -> float:
+        return self._elo
+
+    @elo.setter
+    def elo(self, elo: float):
+        logger.debug(f'elo_setter: {elo}')
+
+        # Update elo in database, check if write was successful then update Account info
+        if database_operation.update_player_elo(database_setup.DbHandler.db_cnc, self.id, elo):
+            self._elo = elo
+            logger.debug('Updated elo')
+        else:
+            logger.error('Unable to update elo')
+            raise exception.UnableToWrite(class_='Account', attribute='elo', value=elo)
+
 
 def get_account_from_db(ctx: commands.Context, connection: sqlite3.Connection, player_id: int):
     """Returns Account of player_id
@@ -166,7 +183,7 @@ def get_account_from_db(ctx: commands.Context, connection: sqlite3.Connection, p
 
     # create and place new Account into acc to return
     account = Account(player_info[0], du.get_member_by_uuid(ctx, player_info[1]), player_info[2], player_info[3],
-                      player_info[4], player_info[5], player_info[6])
+                      player_info[4], player_info[5], player_info[6], player_info[7])
     logger.debug(f'acc: {account}')
     return account
 
@@ -235,7 +252,7 @@ def get_account_server_all(ctx: commands.Context, connection: sqlite3.Connection
     for player in player_list:
         logger.debug(f'player: {player}')
         account_list.append(Account(player[0], du.get_member_by_uuid(ctx, player[1]), player[2],
-                                    player[3], player[4], player[5], player[6]))
+                                    player[3], player[4], player[5], player[6], player[7]))
 
     # Check if list has been propagated
     if not len(account_list):

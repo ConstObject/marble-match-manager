@@ -45,7 +45,8 @@ def create_tables(connection):
                     "marbles INTEGER NOT NULL, "
                     "server_id INTEGER NOT NULL, "
                     "wins INTEGER NOT NULL, "
-                    "loses INTEGER NOT NULL)")
+                    "loses INTEGER NOT NULL, "
+                    "elo REAL NOT NULL)")
 
         cur.execute("CREATE TABLE IF NOT EXISTS "
                     "matches("

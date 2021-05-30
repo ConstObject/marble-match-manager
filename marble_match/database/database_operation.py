@@ -47,12 +47,12 @@ def raw_query(connection: sqlite3.Connection, query: str, query_param: list):
 
 def create_user(connection: sqlite3.Connection, player_id: Union[int, None],
                 uuid: int, nickname: str, marbles: int, server_id: int,
-                wins: int = 0, loses: int = 0) -> int:
+                wins: int = 0, loses: int = 0, elo: float = 1200) -> int:
 
-    logger.debug(f'create_user: {player_id}, {uuid}, {nickname}, {marbles}, {server_id}, {wins}, {loses}')
+    logger.debug(f'create_user: {player_id}, {uuid}, {nickname}, {marbles}, {server_id}, {wins}, {loses}, {elo}')
 
-    query = "INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)"
-    query_param = [player_id, uuid, nickname, marbles, server_id, wins, loses]
+    query = "INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    query_param = [player_id, uuid, nickname, marbles, server_id, wins, loses, elo]
 
     try:
         cur = connection.cursor()
@@ -68,7 +68,7 @@ def create_user(connection: sqlite3.Connection, player_id: Union[int, None],
         return 0
 
 
-# TODO Update references to new paramaters
+# TODO Update references to new parameters
 def create_match(connection: sqlite3.Connection, match_id: Union[int, None], amount: int,
                  participant1: int, participant2: int, active: int = 0, accepted: int = 0,
                  game: str = 'melee', format: str = 'Bo3') -> int:
@@ -334,6 +334,27 @@ def update_player_loses(connection: sqlite3.Connection, player_id: int, loses: i
         return True
     except Error as e:
         logger.error(f'There was an error updating loses in user: {e}')
+        return False
+
+
+def update_player_elo(connection: sqlite3.Connection, player_id: int, elo: float) -> bool:
+
+    logger.debug(f'update_player_loses: {player_id}, {elo}')
+
+    query = "UPDATE users SET elo = ? WHERE id = ?"
+    query_param = [elo, player_id]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        connection.commit()
+
+        logger.debug(replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+
+        return True
+    except Error as e:
+        logger.error(f'There was an error updating elo in user: {e}')
         return False
 
 

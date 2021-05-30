@@ -9,6 +9,7 @@ from discord.ext import commands
 import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.account as acc
+import utils.elo as elo
 import utils.exception as exception
 
 logger = logging.getLogger(f'marble_match.{__name__}')
@@ -132,6 +133,28 @@ class Match:
         else:
             logger.error('Unable to write to match_history')
             raise exception.UnableToWrite(attribute='match_history')
+
+    def update_player_elo(self, k_factor: int = elo.k_factor) -> bool:
+        logger.debug(f'update_player_elo: {k_factor}')
+
+        # Check if match is_history and has a winner
+        if not self.is_history or self.winner is None:
+            logger.debug(f'Tried to update elo when is not history or no winner: {self}')
+            return False
+
+        # Get scores for each player
+        challenger_score = 1 if self.winner.id == self.challenger.id else 0
+        recipient_score = 1 if self.winner.id == self.recipient.id else 0
+
+        # Get expected scores of players
+        updated_scores = elo.get_updated_scores(self.challenger.elo, self.recipient.elo,
+                                                challenger_score, recipient_score, k_factor)
+
+        # Update players elo
+        self.challenger.elo = updated_scores[0]
+        self.recipient.elo = updated_scores[1]
+
+        return True
 
 
 def create_match(ctx, match_id: int, amount: int, challenger: acc.Account, recipient: acc.Account,

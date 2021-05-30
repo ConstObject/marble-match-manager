@@ -288,8 +288,6 @@ class MatchCog(commands.Cog, name='Matches'):
             return
         await du.code_message(ctx, f'Match {match_id} started, betting is closed and all bets are locked in.')
 
-
-
     @commands.command(name='winner', help='Selects the winner of a marble match, and transfers marbles')
     @commands.guild_only()
     async def match_win(self, ctx: commands.Context, member: Union[discord.Member, str] = None):
@@ -357,6 +355,8 @@ class MatchCog(commands.Cog, name='Matches'):
             logger.debug('Updated match info')
             match.create_history()
             logger.debug('Created match_history for match')
+            match.update_player_elo()
+            logger.debug('Updated players elo')
             if bets.process_bets(ctx, match):
                 logger.debug('Processed bets')
         except commands.CommandError as e:
