@@ -24,6 +24,26 @@ scheduler = AsyncIOScheduler()
 logger = logging.getLogger(f'marble_match.{__name__}')
 
 
+def is_stat_tracked(server: int, stat: str) -> bool:
+    logger.debug(f'is_stat_tracked: {server}, {stat}')
+
+    # Setup config parser and get sections
+    config = configparser.ConfigParser()
+    config.read('marble_bot.ini')
+    sections = config.sections()
+    server_string = str(server)
+
+    for servers in sections:
+        if servers == server_string:
+            # Get stats tracked for server, then split into a list to process
+            tracked_stats = config[servers]['tracked_stats']
+            # Check if stat is in tracked stats
+            if stat in tracked_stats:
+                return True
+
+    return False
+
+
 def create_table_by_stat(connection, stat):
     logger.debug(f'create_tables_by_stat: {connection}')
     query = f'CREATE TABLE IF NOT EXISTS {stat}(' \
@@ -48,6 +68,9 @@ def create_entry(connection, stat, entry_data):
     logger.debug(f'create_entry')
 
     query = f"INSERT INTO {stat} VALUES ( ?, ?, ?, ? )"
+
+    # Making table if it doesn't exist
+    create_table_by_stat(connection, stat)
 
     try:
         cur = connection.cursor()
