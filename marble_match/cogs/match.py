@@ -17,6 +17,7 @@ import utils.bets as bets
 import utils.exception as exception
 import utils.images as image
 import utils.ranked as ranked
+import utils.scheduled as scheduled
 
 logger = logging.getLogger('marble_match.match')
 
@@ -356,28 +357,38 @@ class MatchCog(commands.Cog, name='Matches'):
             logger.debug('Updated match info')
             match.create_history()
             logger.debug('Created match_history for match')
-            match.update_player_elo()
-            logger.debug('Updated players elo')
+            # Check if game is melee, do not update elo if it's not melee
+            if match.game == 'melee':
+                match.update_player_elo()
+                logger.debug('Updated players elo')
             if bets.process_bets(ctx, match):
                 logger.debug('Processed bets')
-
-            # Check if there is a current season
-            if ranked.is_season_active(ctx.guild.id):
-                logger.debug(f'Season is active {ctx.guild.id}')
-                # Get current season
-                current_season = ranked.current_season(ctx.guild.id)
-                logger.debug(f'current_season: {current_season}')
-                # Create season entry for each player
-                database_operation.create_season_entry(DbHandler.db_cnc,
-                                                       ctx.guild.id, current_season, winner.id, match.amount)
-                database_operation.create_season_entry(DbHandler.db_cnc,
-                                                       ctx.guild.id, current_season, loser.id, match.amount * -1)
-                logger.debug('Created season entries')
 
         except commands.CommandError as e:
             logger.error(f'Unable to create matches_history entry')
             await du.code_message(ctx, f'Failed to add match to history or to delete from matches: {match.id}', 3)
             return
+
+        # Check if there is a current season and create an entry for it
+        if ranked.is_season_active(ctx.guild.id):
+            logger.debug(f'Season is active creating entries')
+            ranked.create_season_entry(DbHandler.db_cnc, ctx.guild.id, winner.id, match.amount, match.id)
+            ranked.create_season_entry(DbHandler.db_cnc, ctx.guild.id, loser.id, match.amount*-1, match.id)
+
+        # Check if we are tracking marble_change
+        if scheduled.is_stat_tracked(ctx.guild.id, 'marble_change'):
+            logger.debug(f'Tracking marble_change')
+            scheduled.create_entry(DbHandler.db_cnc, 'marble_change', [None, ctx.guild.id, datetime.utcnow(),
+                                                                       f'{winner.id},{match.amount}'])
+            scheduled.create_entry(DbHandler.db_cnc, 'marble_change', [None, ctx.guild.id, datetime.utcnow(),
+                                                                       f'{loser.id},{match.amount*-1}'])
+        # Check if we are tracking elo_change
+        if scheduled.is_stat_tracked(ctx.guild.id, 'elo_change'):
+            logger.debug(f'Tracking elo_change')
+            scheduled.create_entry(DbHandler.db_cnc, 'elo_change', [None, ctx.guild.id, datetime.utcnow(),
+                                                                    f'{match.challenger.id},{match.challenger.elo}'])
+            scheduled.create_entry(DbHandler.db_cnc, 'elo_change', [None, ctx.guild.id, datetime.utcnow(),
+                                                                    f'{match.recipient.id},{match.recipient.elo}'])
 
         await du.code_message(ctx, f'{winner.nickname} is the winner, gaining a total of {match.amount} marbles!')
 
