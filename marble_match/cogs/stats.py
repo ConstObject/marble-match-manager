@@ -12,6 +12,7 @@ import database.database_operation as db_op
 import utils.discord_utils as du
 import utils.account as acc
 import utils.exception as exception
+import utils.ranked as ranked
 
 logger = logging.getLogger(f'marble_match.{__name__}')
 
@@ -56,7 +57,7 @@ season_query = "SELECT " \
                "seasons.player_id, " \
                "SUM(marble_change) as change_total " \
                "FROM seasons " \
-               "WHERE seasons.server_id == ? " \
+               "WHERE seasons.server_id == ? AND seasons.season == ?" \
                "GROUP BY seasons.player_id " \
                "ORDER BY change_total DESC"
 
@@ -131,7 +132,7 @@ class StatsCog(commands.Cog, name='Stats'):
         member_account = None
 
         # Check if stat is valid
-        if not stat in (account_stats + non_account_stats):
+        if stat not in (account_stats + non_account_stats) and 'season' not in stat:
             logger.debug(f'Invalid stat passed {stat}')
             await du.code_message(ctx, f'Unsupported stat, use list_stat for a list of valid stats', 3)
             await ctx.send_help('leaderboard')
@@ -212,9 +213,18 @@ class StatsCog(commands.Cog, name='Stats'):
                     con_string += f"#{index} {player_account.nickname}: {winrate}\n"
                     page_text_list.append(con_string)
                 logger.debug(f'Exited bet_winrate for loop')
-            elif stat == 'season':
+            elif "season" in stat:  # == 'season':
+
+                # Split stat to get the season they'd like to request, check if it's a valid number
+                split_string = stat.split('season')
+                if not split_string[1].isnumeric():
+                    logger.error(f'User entered season but it failed numeric check')
+                    await du.code_message(ctx, 'Unable to get season number, is not numeric. Ex season2')
+                    await ctx.send_help('leaderboard')
+                    return
+
                 # Preform query
-                query_results = db_op.raw_query(DbHandler.db_cnc, season_query, [ctx.guild.id])
+                query_results = db_op.raw_query(DbHandler.db_cnc, season_query, [ctx.guild.id, split_string[1]])
                 index = 0
                 # Loop through sorted_list, and append lines to page_text_list for each index
                 for results in query_results:
