@@ -62,6 +62,38 @@ class PrefCog(commands.Cog, name='Preferences'):
 
         await du.code_message(ctx, f'Cost of colored roles changed to {cost}', 1)
 
+    @commands.command(name='print_cogs', description='Prints cogs')
+    @commands.check(debug.is_soph)
+    @commands.guild_only()
+    async def print_cogs(self, ctx: commands.Context):
+        logger.debug(f'print_cogs')
+
+        # Get ConfigParser to set new value
+        config = ConfigParser()
+        config.read('marble_bot.ini')
+
+        cogs = config['DEFAULT']['cogs']
+        await du.code_message(ctx, f'Cogs: {cogs}')
+
+    @commands.command(name='write_cogs', description='Writes to cogs')
+    @commands.check(debug.is_soph)
+    @commands.guild_only()
+    async def write_cogs(self, ctx: commands.Context, to_write: str):
+        logger.debug(f'write_cogs: {to_write}')
+
+        # Get ConfigParser to set new value
+        config = ConfigParser()
+        config.read('marble_bot.ini')
+
+        # Set value to new value
+        config.set('DEFAULT', 'cogs', to_write)
+
+        # Write file
+        with open('marble_bot.ini', 'w') as config_file:
+            config.write(config_file)
+
+        await du.code_message(ctx, f'Updated config file with new cogs', 1)
+
     @commands.command(name='print_tracked_stats', description='Prints tracked stats')
     @commands.check(debug.is_soph)
     @commands.guild_only()

@@ -4,6 +4,7 @@ import cogs.economy
 import cogs.history
 import cogs.information
 import cogs.match
+import cogs.preferences
+import cogs.services
 import cogs.setup
 import cogs.stats
-import cogs.services

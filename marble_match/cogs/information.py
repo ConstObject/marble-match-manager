@@ -1,4 +1,5 @@
 import logging
+from urllib.request import urlopen
 
 import discord
 from discord.ext import commands
@@ -15,8 +16,9 @@ class InfoCog(commands.Cog, name='Information'):
 
     @commands.command(name='info', help='Prints latest version info')
     async def info(self, ctx: commands.Context):
-        with open('./change_log.txt', 'r') as file:
-            await du.code_message(ctx, file.read())
+        url_results = urlopen('https://constobject.github.io/change_log')
+        text = str(url_results.read().decode('utf-8'))
+        await du.code_message(ctx, text)
 
     @commands.command(name='bug', help='Prints link to submit bug report')
     async def bug(self, ctx: commands.Context):

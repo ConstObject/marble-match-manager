@@ -6,3 +6,4 @@ import utils.images
 import utils.scheduled
 import utils.elo
 import utils.ranked
+import utils.exception
