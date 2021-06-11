@@ -113,8 +113,10 @@ def create_tables(connection):
                     "season INTEGER NOT NULL, "
                     "player_id INTEGER NOT NULL, "
                     "marble_change INTEGER NOT NULL, "
+                    "match_id INTEGER NOT NULL, "
                     "change_time timestamp, "
-                    "FOREIGN KEY(player_id) REFERENCES users(id))")
+                    "FOREIGN KEY(player_id) REFERENCES users(id), "
+                    "FOREIGN KEY(match_id) REFERENCES matches_history(id))")
 
         connection.commit()
     except Error as e:
