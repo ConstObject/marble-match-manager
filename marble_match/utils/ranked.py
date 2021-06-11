@@ -34,6 +34,47 @@ def current_season(server: int) -> int:
     return int(season) if season.isnumeric() else 0
 
 
+def create_season_list_entry(connection: sqlite3, server: int, season_number: int, start_time: datetime,
+                             end_time: datetime = None):
+    logger.debug(f'create_season_list_entry: {server}, {season_number}, {start_time}')
+
+    query = "INSERT INTO season_list VALUES (?, ?, ?, ?, ?)"
+    query_param = [None, server, season_number, start_time, end_time]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        connection.commit()
+
+        logger.debug(database_operation.replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+
+        return cur.lastrowid
+    except sqlite3.Error as e:
+        logger.error(f'There was an error inserting a entry into season_list: {e}')
+        return
+
+
+def update_season_list_end_time(connection: sqlite3, server: int, season_number: int, new_end_time: datetime):
+    logger.debug(f'update_season_list_end_time: {server}, {season_number}, {new_end_time}')
+
+    query = "UPDATE season_list SET end_time = ? WHERE server_id == ? AND season_number == ?"
+    query_param = [new_end_time, server, season_number]
+
+    try:
+        cur = connection.cursor()
+        cur.execute(query, query_param)
+        connection.commit()
+
+        logger.debug(database_operation.replace_char_list(query, query_param))
+        logger.debug(f'lastrowid: {cur.lastrowid}')
+
+        return cur.lastrowid
+    except sqlite3.Error as e:
+        logger.error(f'There was an error updating a entry in season_list: {e}')
+        return
+
+
 def create_season_entry(connection: sqlite3.Connection, server: int, player_id: int, marble_change: int, match_id: int,
                         change_time: datetime = datetime.utcnow()):
     logger.debug(f'create_season_entry: {server}, {player_id}, {marble_change}, {match_id}, {change_time}')
