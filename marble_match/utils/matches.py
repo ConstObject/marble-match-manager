@@ -145,10 +145,12 @@ class Match:
         # Get scores for each player
         challenger_score = 1 if self.winner.id == self.challenger.id else 0
         recipient_score = 1 if self.winner.id == self.recipient.id else 0
+        logger.debug(f'challenger_score: {challenger_score}, recipient_score" {recipient_score}')
 
         # Get expected scores of players
         updated_scores = elo.get_updated_scores(self.challenger.elo, self.recipient.elo,
                                                 challenger_score, recipient_score, k_factor)
+        logger.debug(f'updated_scores: {updated_scores}')
 
         # Update players elo
         self.challenger.elo = updated_scores[0]
