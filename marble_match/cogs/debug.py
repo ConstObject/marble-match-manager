@@ -10,6 +10,7 @@ import utils.account as accounts
 import utils.matches as matches
 import utils.bets as bets
 import utils.images as image
+import utils.scheduled as sch
 
 logger = logging.getLogger(f'marble_match.{__name__}')
 
@@ -55,10 +56,7 @@ class DebugCog(commands.Cog, name='Debug', description="Don't mind me unless you
     @commands.check(is_soph)
     @commands.guild_only()
     async def test(self, ctx: commands.Context):
-        roles = await ctx.guild.fetch_roles()
-        print(f'length {len(roles)}\n\n')
-        for role in roles:
-            print(f'{role}: {role.position}\n\n')
+        print(sch.is_stat_tracked(ctx.guild.id, 'test'))
 
     @commands.command(name='create_bet_debug')
     @commands.check(is_soph)

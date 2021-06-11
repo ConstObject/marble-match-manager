@@ -5,11 +5,10 @@ from configparser import ConfigParser
 import discord
 from discord.ext import commands
 
-import database.database_operation as database_operation
 from database.database_setup import DbHandler
 import utils.account as acc
 import utils.discord_utils as du
-import utils.exception as exception
+import cogs.debug as debug
 
 logger = logging.getLogger(f'marble_match.{__name__}')
 
@@ -62,6 +61,80 @@ class PrefCog(commands.Cog, name='Preferences'):
             config.write(config_file)
 
         await du.code_message(ctx, f'Cost of colored roles changed to {cost}', 1)
+
+    @commands.command(name='print_tracked_stats', description='Prints tracked stats')
+    @commands.check(debug.is_soph)
+    @commands.guild_only()
+    async def print_tracked_stats(self, ctx: commands.Context):
+        logger.debug(f'print_tracked_stats')
+
+        # Get ConfigParser to set new value
+        config = ConfigParser()
+        config.read('marble_bot.ini')
+
+        tracked_stats = config[str(ctx.guild.id)]['tracked_stats']
+        if not tracked_stats:
+            await du.code_message(ctx, 'No stats tracked', 3)
+            return
+        else:
+            await du.code_message(ctx, f'Tracked stats: {tracked_stats}')
+
+    @commands.command(name='write_tracked_stats', description='Writes to tracked stats')
+    @commands.check(debug.is_soph)
+    @commands.guild_only()
+    async def write_tracked_stats(self, ctx: commands.Context, to_write: str):
+        logger.debug(f'write_tracked_stats: {to_write}')
+
+        # Get ConfigParser to set new value
+        config = ConfigParser()
+        config.read('marble_bot.ini')
+
+        # Set value to new value
+        config.set(str(ctx.guild.id), 'tracked_stats', to_write)
+
+        # Write file
+        with open('marble_bot.ini', 'w') as config_file:
+            config.write(config_file)
+
+        await du.code_message(ctx, f'Updated config file with new tracked_stats', 1)
+
+    @commands.command(name='update_season_number', description='Writes to season with a new value')
+    @commands.check(debug.is_soph)
+    @commands.guild_only()
+    async def update_season_number(self, ctx: commands.Context, to_write: str):
+        logger.debug(f'update_season_number: {to_write}')
+
+        # Get ConfigParser to set new value
+        config = ConfigParser()
+        config.read('marble_bot.ini')
+
+        # Set value to new value
+        config.set(str(ctx.guild.id), 'season', to_write)
+
+        # Write file
+        with open('marble_bot.ini', 'w') as config_file:
+            config.write(config_file)
+
+        await du.code_message(ctx, f'Updated config file with new season number', 1)
+
+    @commands.command(name='update_season_active', description='Writes to season_active with a new value')
+    @commands.check(debug.is_soph)
+    @commands.guild_only()
+    async def update_season_active(self, ctx: commands.Context, to_write: bool):
+        logger.debug(f'update_season_active: {to_write}')
+
+        # Get ConfigParser to set new value
+        config = ConfigParser()
+        config.read('marble_bot.ini')
+
+        # Set value to new value
+        config.set(str(ctx.guild.id), 'season_active', '1' if to_write else '0')
+
+        # Write file
+        with open('marble_bot.ini', 'w') as config_file:
+            config.write(config_file)
+
+        await du.code_message(ctx, f'Updated config file with new season_active', 1)
 
 
 def setup(bot):
