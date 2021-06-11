@@ -108,7 +108,7 @@ def create_tables(connection):
 
         cur.execute("CREATE TABLE IF NOT EXISTS "
                     "seasons("
-                    "id INTEGER PRIMARY KEY NOT NULL, "
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
                     "server_id INTEGER NOT NULL, "
                     "season INTEGER NOT NULL, "
                     "player_id INTEGER NOT NULL, "
@@ -117,6 +117,14 @@ def create_tables(connection):
                     "change_time timestamp, "
                     "FOREIGN KEY(player_id) REFERENCES users(id), "
                     "FOREIGN KEY(match_id) REFERENCES matches_history(id))")
+
+        cur.execute("CREATE TABLE IF NOT EXISTS "
+                    "season_list("
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    "server_id INTEGER NOT NULL, "
+                    "season_number INTEGER NOT NULL, "
+                    "start_time timestamp NOT NULL, "
+                    "end_time timestamp)")
 
         connection.commit()
     except Error as e:
