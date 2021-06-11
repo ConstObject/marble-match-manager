@@ -34,9 +34,3 @@ def get_updated_scores(player1_rank: float, player2_rank: float, player1_score: 
     logger.debug(f'player1_updated: {player1_updated}, player2_updated: {player2_updated}')
 
     return [player1_updated, player2_updated]
-
-
-scores = get_expected_scores(1200, 1200)
-print(scores)
-updated_scores = get_updated_scores(1200, 1200, 1, 0)
-print(updated_scores)
