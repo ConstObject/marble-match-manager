@@ -105,7 +105,7 @@ class ServiceCog(commands.Cog, name='Services'):
 
         await du.code_message(ctx, 'Created color roles!', 1)
 
-    @commands.command(name='buy', description='Buy services and items with your marbles')
+    @commands.command(name='buy', help='Buy services and items with your marbles')
     @commands.guild_only()
     async def buy(self, ctx: commands.Context, item_group: str, specific_item: Union[discord.Role, str]):
         logger.debug(f'buy: {item_group}, {specific_item}')
@@ -155,14 +155,14 @@ class ServiceCog(commands.Cog, name='Services'):
                 await ctx.send_help('buy')
                 return
 
-    @commands.command(name='list_color_roles', description='Prints list of color roles')
+    @commands.command(name='list_color_roles', help='Prints list of color roles')
     @commands.guild_only()
     async def list_color_roles(self, ctx: commands.Context):
         text = '\n'.join(color for color in color_role_list)
 
         await du.code_message(ctx, f'Colors\n\n{text}')
 
-    @commands.command(name='test_color_role', description='Temporarily test a color role')
+    @commands.command(name='test_color_role', help='Temporarily test a color role')
     @commands.guild_only()
     async def test_color(self, ctx: commands.Context, color_role: discord.Role):
 

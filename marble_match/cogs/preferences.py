@@ -37,7 +37,7 @@ class PrefCog(commands.Cog, name='Preferences'):
         account.nickname = nickname
         await ctx.send(f'New nickname: "{account.nickname}"')
 
-    @commands.command(name='color_role_cost', description='Sets the price of color roles')
+    @commands.command(name='color_role_cost', help='Sets the price of color roles')
     @commands.has_role('Admin')
     @commands.guild_only()
     async def color_role_cost(self, ctx: commands.Context, cost: int):
@@ -62,7 +62,7 @@ class PrefCog(commands.Cog, name='Preferences'):
 
         await du.code_message(ctx, f'Cost of colored roles changed to {cost}', 1)
 
-    @commands.command(name='print_cogs', description='Prints cogs')
+    @commands.command(name='print_cogs', help='Prints cogs')
     @commands.check(debug.is_soph)
     @commands.guild_only()
     async def print_cogs(self, ctx: commands.Context):
@@ -75,7 +75,7 @@ class PrefCog(commands.Cog, name='Preferences'):
         cogs = config['DEFAULT']['cogs']
         await du.code_message(ctx, f'Cogs: {cogs}')
 
-    @commands.command(name='write_cogs', description='Writes to cogs')
+    @commands.command(name='write_cogs', help='Writes to cogs')
     @commands.check(debug.is_soph)
     @commands.guild_only()
     async def write_cogs(self, ctx: commands.Context, to_write: str):
@@ -94,7 +94,7 @@ class PrefCog(commands.Cog, name='Preferences'):
 
         await du.code_message(ctx, f'Updated config file with new cogs', 1)
 
-    @commands.command(name='print_tracked_stats', description='Prints tracked stats')
+    @commands.command(name='print_tracked_stats', help='Prints tracked stats')
     @commands.check(debug.is_soph)
     @commands.guild_only()
     async def print_tracked_stats(self, ctx: commands.Context):
@@ -111,7 +111,7 @@ class PrefCog(commands.Cog, name='Preferences'):
         else:
             await du.code_message(ctx, f'Tracked stats: {tracked_stats}')
 
-    @commands.command(name='write_tracked_stats', description='Writes to tracked stats')
+    @commands.command(name='write_tracked_stats', help='Writes to tracked stats')
     @commands.check(debug.is_soph)
     @commands.guild_only()
     async def write_tracked_stats(self, ctx: commands.Context, to_write: str):
@@ -130,7 +130,7 @@ class PrefCog(commands.Cog, name='Preferences'):
 
         await du.code_message(ctx, f'Updated config file with new tracked_stats', 1)
 
-    @commands.command(name='update_season_number', description='Writes to season with a new value')
+    @commands.command(name='update_season_number', help='Writes to season with a new value')
     @commands.check(debug.is_soph)
     @commands.guild_only()
     async def update_season_number(self, ctx: commands.Context, to_write: str):
@@ -149,7 +149,7 @@ class PrefCog(commands.Cog, name='Preferences'):
 
         await du.code_message(ctx, f'Updated config file with new season number', 1)
 
-    @commands.command(name='update_season_active', description='Writes to season_active with a new value')
+    @commands.command(name='update_season_active', help='Writes to season_active with a new value')
     @commands.check(debug.is_soph)
     @commands.guild_only()
     async def update_season_active(self, ctx: commands.Context, to_write: bool):
