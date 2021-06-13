@@ -113,14 +113,17 @@ class MatchCog(commands.Cog, name='Matches'):
         # Setup embed
         user1 = self.bot.get_user(challenger.member.id)
         user2 = self.bot.get_user(recipient.member.id)
+        logger.debug(f'user1: {user1}, user2: {user2}')
         user1_avi: discord.asset.Asset = user1.avatar_url_as(format='png', size=128)
         user2_avi: discord.asset.Asset = user2.avatar_url_as(format='png', size=128)
         working_directory = os.getcwd()
         print(working_directory)
         await user1_avi.save(f'imgs/{user1.id}.png')
         await user2_avi.save(f'imgs/{user2.id}.png')
+        logger.debug(f'Saved user images')
 
         image_file = image.create_image(f'{user1.id}', f'{user2.id}')
+        logger.debug(f'Created match image')
 
         embed = discord.Embed(title='Marble Match', description='')
         embed.set_footer(text=f'Match ID: {match.id}', icon_url=self.bot.user.avatar_url)
@@ -133,11 +136,13 @@ class MatchCog(commands.Cog, name='Matches'):
         embed.colour = discord.colour.Color.orange()
 
         message = await ctx.send(file=file, embed=embed)
+        logger.debug(f'Embed match message sent')
 
         # Add reactions to message
         await message.add_reaction('\U00002705')
         await message.add_reaction('\U0001F19A')
         await message.add_reaction('\U0000274C')
+        logger.debug(f'Reactions added')
 
         # Function to check if reaction and user
         def check_member(reaction, user):
@@ -149,24 +154,34 @@ class MatchCog(commands.Cog, name='Matches'):
         while active:
             try:
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=180, check=check_member)
+                logger.debug(f'Reaction got: {reaction}, {user}')
                 # Accept the match.
                 if str(reaction) == '\U00002705' and user.id == recipient.member.id:
+                    logger.debug(f'Accepted match reaction')
                     match.accepted = True
+                    if recipient.marbles < match.amount:
+                        await du.code_message(ctx, f'You do not have enough marbles to accept')
+                        database_operation.delete_match(DbHandler.db_cnc, match.id)
+                        await reaction.remove(self.bot.user)
+                        active = False
+                        continue
+                    recipient.marbles -= match.amount
                     await reaction.remove(self.bot.user)
                     embed.colour = discord.colour.Color.gold()
                     embed.remove_field(1)
                     embed.add_field(name='Status', value='Accepted', inline=True)
                     await message.edit(embed=embed)
                 elif str(reaction) == '\U0001F19A':
+                    logger.debug(f'Start match reaction')
                     if match.accepted:
                         match.active = True
-                        recipient.marbles -= match.amount
                         await reaction.remove(self.bot.user)
                         embed.colour = discord.colour.Color.green()
                         embed.remove_field(1)
                         embed.add_field(name='Status', value='Started', inline=True)
                         await message.edit(embed=embed)
                 elif str(reaction) == '\U0000274C':
+                    logger.debug(f'Closed match reaction')
                     challenger.marbles += match.amount
                     if match.active:
                         recipient.marbles += match.amount
