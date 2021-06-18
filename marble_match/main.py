@@ -128,6 +128,7 @@ async def on_command_error(ctx, error):
     else:
         # All other Errors not returned come here. And we can just print the default TraceBack.
         logger.error('Ignoring exception in command {}:'.format(ctx.command))
+        logger.error(f'Ignored exception: {error}')
         traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
 
